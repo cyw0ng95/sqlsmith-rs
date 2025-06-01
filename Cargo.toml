@@ -5,4 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
+fern = "0.7.1"
+humantime = "2.2.0"
+log = "0.4.27"
 rusqlite = "0.36.0"

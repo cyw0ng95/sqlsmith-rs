@@ -2,11 +2,13 @@
 
 // Declare the drivers module so Rust can find its content
 mod drivers;
+mod utils;
 
 use drivers::DatabaseDriver; // Import the trait for type hinting and polymorphism
 use anyhow::Result;
 
 fn main() -> Result<()> {
+    utils::config_logger::config_fern(); // Configure logging
     // --- SQLite Example ---
     println!("--- SQLite Driver ---");
     let sqlite_driver = drivers::sqlite_in_mem::SqliteDriver::new(":memory:"); // Or "my_database.db"
