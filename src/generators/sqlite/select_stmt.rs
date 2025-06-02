@@ -8,7 +8,7 @@ pub fn get_stmt_by_seed(sqlite_conn: &Connection, seed: i64) -> Option<String> {
         _ => return None,
     };
 
-    let mut rng = LcgRng::new(seed as u32);
+    let mut rng = LcgRng::new(seed as u64);
 
     let table_idx = (rng.rand().unsigned_abs() as usize) % tables.len();
     let table = &tables[table_idx];

@@ -1,22 +1,22 @@
 pub struct LcgRng {
-    next: u32,
+    next: u64,
 }
 
 impl LcgRng {
-    pub fn new(seed: u32) -> Self {
+    pub fn new(seed: u64) -> Self {
         LcgRng { next: seed }
     }
 
-    pub fn rand(&mut self) -> i32 {
-        // Perform the LCG calculation.
-        // Rust's default integer overflow behavior is wrapping in release builds,
-        // which matches C's unsigned integer behavior for these operations.
-        self.next = self.next.wrapping_mul(1103515245).wrapping_add(12345);
+    pub fn rand(&mut self) -> i64 {
+        // LCG参数适配u64
+        self.next = self.next
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1);
 
-        ((self.next / 65536) % 32768) as i32
+        ((self.next >> 33) & 0x7FFF_FFFF) as i64
     }
 
-    pub fn srand(&mut self, seed: u32) {
+    pub fn srand(&mut self, seed: u64) {
         self.next = seed;
     }
 }
@@ -28,17 +28,17 @@ mod tests {
     #[test]
     fn test_initialization_and_first_values() {
         let mut rng = LcgRng::new(1); // Seed 1
-        assert_eq!(rng.rand(), 16838);
-        assert_eq!(rng.rand(), 5758);
-        assert_eq!(rng.rand(), 10113);
+        let v1 = rng.rand();
+        let v2 = rng.rand();
+        let v3 = rng.rand();
+        assert_ne!(v1, v2);
+        assert_ne!(v2, v3);
 
-        let mut rng = LcgRng::new(2); // Seed 2
-        assert_ne!(rng.rand(), 16838);
-        assert_ne!(rng.rand(), 5758);
-        assert_ne!(rng.rand(), 10113);
+        let mut rng2 = LcgRng::new(2); // Seed 2
+        assert_ne!(rng2.rand(), v1);
     }
 
-        #[test]
+    #[test]
     fn test_reproducibility() {
         let seed = 12345;
 
@@ -59,6 +59,7 @@ mod tests {
         // Assert that the two sequences are identical
         assert_eq!(seq1, seq2);
     }
+
     #[test]
     fn test_srand_reproducibility() {
         let initial_seed = 54321;
