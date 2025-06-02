@@ -76,6 +76,16 @@ impl SqliteDriver {
         )?;
         Ok(count == 0)
     }
+
+    pub fn prepare(&self) -> anyhow::Result<Connection> {
+        let mut conn = self.connect()?;
+        self.init(&mut conn)?;
+        let ok = self.verify(&conn)?;
+        if !ok {
+            anyhow::bail!("SQLite verify failed after init.");
+        }
+        Ok(conn)
+    }
 }
 
 // Implement the DatabaseDriver trait for SqliteDriver

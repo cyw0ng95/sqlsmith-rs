@@ -13,26 +13,16 @@ use drivers::sqlite_in_mem::SqliteDriver;
 
 fn main() -> Result<()> {
     utils::logger::init(); // Configure logging
-    // --- SQLite Example ---
-    info!("--- SQLite Driver ---"); // changed
 
-    // SQLITE_IN_MEM 类型无需传递 ":memory:"
-    let sqlite_driver = SqliteDriver::new();
-
-    let mut sqlite_conn = sqlite_driver.connect()?; // `connect()` is sync
-    info!("SQLite connection object obtained."); // changed
-
-    sqlite_driver.init(&mut sqlite_conn)?; // `init()` is sync
-    info!("SQLite database initialized (TPC-C tables created).");
-
-    let ok = match sqlite_driver.verify(&sqlite_conn) {
-        Ok(v) => v,
+    let sqlite_driver: SqliteDriver = SqliteDriver::new();
+    let mut sqlite_conn = match sqlite_driver.prepare() {
+        Ok(conn) => conn,
         Err(e) => {
-            error!("Error verifying warehouse table: {:?}", e);
+            error!("Error preparing SQLite connection: {:?}", e);
             return Err(e);
         }
     };
-    info!("Verify warehouse table: {}", if ok { "OK" } else { "FAILED" });
+    info!("SQLite connection prepared and verified.");
 
     let mut engine = Engine::new(0, &sqlite_driver);
 
