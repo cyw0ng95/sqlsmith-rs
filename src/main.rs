@@ -19,6 +19,7 @@ fn main() -> Result<()> {
     let profile = read_profile();
     let driver_kind = profile.driver.expect("driver kind must be specified");
     let run_count = profile.count.expect("run count must be an unsigned number");
+    profile.print();
 
     let (driver, mut sqlite_conn) = match new_conn(driver_kind) {
         Ok((driver, conn)) => (driver, conn),

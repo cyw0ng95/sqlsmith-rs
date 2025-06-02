@@ -9,6 +9,16 @@ pub struct Profile {
     pub count: Option<usize>,
 }
 
+impl Profile {
+    pub fn print(&self) {
+        log::info!(
+            "Profile: driver={:?}, count={:?}",
+            self.driver,
+            self.count
+        );
+    }
+}
+
 pub fn read_profile() -> Profile {
     if let Ok(content) = fs::read_to_string("profile.json") {
         if let Ok(profile) = serde_json::from_str::<Profile>(&content) {
