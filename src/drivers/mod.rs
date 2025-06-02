@@ -2,6 +2,10 @@ use anyhow::Result;
 
 pub mod sqlite_in_mem;
 
+pub enum DRIVER_KIND {
+    SQLITE_IN_MEM,
+}
+
 pub trait DatabaseDriver {
     /// The associated type for the database connection object.
     /// This allows `connect()` to return the specific connection type for each driver.
@@ -22,4 +26,6 @@ pub trait DatabaseDriver {
     /// # Returns
     /// A `Result` indicating success or failure.
     fn init(&self, conn: &mut Self::Connection) -> Result<()>;
+
+    fn exec(&self, conn: &mut Self::Connection, sql: &str) -> Result<usize>;
 }
