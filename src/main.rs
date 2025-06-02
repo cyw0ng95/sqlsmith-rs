@@ -30,7 +30,7 @@ fn main() -> Result<()> {
 
     let mut i = 0;
     while i < 1000 {
-        let sql = generators::generate();
+        let sql = generators::generate(&sqlite_conn, i as i64);
         info!("Generated SQL: {}", sql);
 
         let result = sqlite_conn.execute(&sql, rusqlite::params![]);
