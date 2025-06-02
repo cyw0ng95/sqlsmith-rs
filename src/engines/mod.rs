@@ -3,13 +3,13 @@ use crate::utils::rand_by_seed::LcgRng;
 use crate::generators::sqlite;
 use crate::drivers::DatabaseDriver;
 
-pub struct Engine<'a, D: DatabaseDriver<Connection = Connection>> {
+pub struct Engine<'a> {
     pub rng: LcgRng,
-    pub driver: &'a D,
+    pub driver: &'a dyn DatabaseDriver<Connection = Connection>,
 }
 
-impl<'a, D: DatabaseDriver<Connection = Connection>> Engine<'a, D> {
-    pub fn new(seed: u64, driver: &'a D) -> Self {
+impl<'a> Engine<'a> {
+    pub fn new(seed: u64, driver: &'a dyn DatabaseDriver<Connection = Connection>) -> Self {
         Self {
             rng: LcgRng::new(seed),
             driver,

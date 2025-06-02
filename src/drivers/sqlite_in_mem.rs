@@ -1,15 +1,15 @@
 // src/drivers/sqlite.rs
 
-use super::DatabaseDriver; // Import the trait from the parent module
+use super::DatabaseDriver;
 use anyhow::{Result, Context};
-use log::info; // Import the log::info macro
+use log::info;
 use rusqlite::Connection;
 use std::fs;
 use std::path::Path;
 
 /// Represents a SQLite database driver.
 pub struct SqliteDriver {
-    pub db_path: String, // Path to the SQLite database file (e.g., ":memory:")
+    pub db_path: String,
 }
 
 impl SqliteDriver {
@@ -41,7 +41,6 @@ impl SqliteDriver {
         info!("(SQLite) TPC-C tables created successfully.");
         Ok(())
     }
-
 
     pub fn verify(&self, conn: &Connection) -> Result<bool> {
         let count: i32 = conn.query_row(
@@ -88,38 +87,18 @@ impl SqliteDriver {
     }
 }
 
-// Implement the DatabaseDriver trait for SqliteDriver
 impl DatabaseDriver for SqliteDriver {
-    // Define the associated connection type for SQLite
-    type Connection = Connection; // rusqlite::Connection is synchronous
+    type Connection = Connection;
 
     fn connect(&self) -> Result<Self::Connection> {
-        info!("(SQLite) Attempting to connect to: {}", self.db_path);
-        let conn = Connection::open(&self.db_path)
-            .with_context(|| format!("Failed to open SQLite database at '{}'", self.db_path))?;
-
-        // Enable foreign key constraints for the current connection.
-        // This is crucial for TPC-C schema if you expect FKs to be enforced.
-        conn.execute("PRAGMA foreign_keys = ON;", ())
-            .context("Failed to enable foreign keys for SQLite")?;
-        info!("(SQLite) Foreign key enforcement enabled.");
-
-        Ok(conn)
+        self.connect()
     }
 
     fn init(&self, conn: &mut Self::Connection) -> Result<()> {
-        info!("(SQLite) Executing init SQL from assets/sqlite/tpcc-create-table.sql...");
-        let sql_file_path = Path::new("assets/sqlite/tpcc-create-table.sql");
-        let sql_content = fs::read_to_string(sql_file_path)
-            .with_context(|| format!("Failed to read SQL file: {:?}", sql_file_path))?;
-
-        conn.execute_batch(&sql_content)
-            .context("Failed to execute SQLite init SQL batch")?;
-        info!("(SQLite) TPC-C tables created successfully.");
-        Ok(())
+        self.init(conn)
     }
 
-    fn exec(&self, conn: &mut Connection, sql: &str) -> anyhow::Result<usize> {
+    fn exec(&self, conn: &mut Self::Connection, sql: &str) -> Result<usize> {
         Ok(conn.execute(sql, rusqlite::params![])?)
     }
 }

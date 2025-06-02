@@ -7,16 +7,15 @@ mod generators;
 mod engines;
 
 use anyhow::Result;
-use log::{info, error}; // <-- Add this
+use log::{info, error};
 use engines::Engine;
-use drivers::sqlite_in_mem::SqliteDriver;
+use drivers::{new_conn, DRIVER_KIND};
 
 fn main() -> Result<()> {
     utils::logger::init(); // Configure logging
 
-    let sqlite_driver: SqliteDriver = SqliteDriver::new();
-    let mut sqlite_conn = match sqlite_driver.prepare() {
-        Ok(conn) => conn,
+    let (driver, mut sqlite_conn) = match new_conn(DRIVER_KIND::SQLITE_IN_MEM) {
+        Ok((driver, conn)) => (driver, conn),
         Err(e) => {
             error!("Error preparing SQLite connection: {:?}", e);
             return Err(e);
@@ -24,10 +23,10 @@ fn main() -> Result<()> {
     };
     info!("SQLite connection prepared and verified.");
 
-    let mut engine = Engine::new(0, &sqlite_driver);
+    let mut engine = Engine::new(0, driver.as_ref());
 
     let mut i = 0;
-    while i < 1000 {
+    while i < 8 {
         let sql = engine.next_sql(&sqlite_conn)
             .unwrap_or_else(|| "SELECT 1;".to_string());
         info!("Generated SQL: {}", sql);
