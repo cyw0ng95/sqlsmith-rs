@@ -1,7 +1,9 @@
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 
 pub mod sqlite_in_mem;
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum DRIVER_KIND {
     SQLITE_IN_MEM,
 }
