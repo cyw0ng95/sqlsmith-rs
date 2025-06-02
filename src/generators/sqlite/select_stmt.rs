@@ -2,13 +2,11 @@ use rusqlite::Connection;
 use crate::generators::sqlite::schema;
 use crate::utils::rand_by_seed::LcgRng;
 
-pub fn get_stmt_by_seed(sqlite_conn: &Connection, seed: i64) -> Option<String> {
+pub fn get_stmt_by_seed(sqlite_conn: &Connection, rng: &mut LcgRng) -> Option<String> {
     let tables = match schema::get(sqlite_conn) {
         Ok(t) if !t.is_empty() => t,
         _ => return None,
     };
-
-    let mut rng = LcgRng::new(seed as u64);
 
     let table_idx = (rng.rand().unsigned_abs() as usize) % tables.len();
     let table = &tables[table_idx];

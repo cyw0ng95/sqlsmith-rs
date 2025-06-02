@@ -4,10 +4,12 @@
 mod drivers;
 mod utils;
 mod generators;
+mod engines;
 
 use drivers::DatabaseDriver; // Import the trait for type hinting and polymorphism
 use anyhow::Result;
 use log::info; // <-- Add this
+use engines::Engine;
 
 fn main() -> Result<()> {
     utils::logger::init(); // Configure logging
@@ -28,9 +30,12 @@ fn main() -> Result<()> {
     )?;
     info!("Number of rows in 'warehouse' table (SQLite): {}\n", count); // changed
 
+    let mut engine = Engine::new(0);
+
     let mut i = 0;
     while i < 1000 {
-        let sql = generators::generate(&sqlite_conn, i as i64);
+        let sql = engine.next_sql(&sqlite_conn)
+            .unwrap_or_else(|| "SELECT 1;".to_string());
         info!("Generated SQL: {}", sql);
 
         let result = sqlite_conn.execute(&sql, rusqlite::params![]);
