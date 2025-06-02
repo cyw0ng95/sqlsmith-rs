@@ -2,6 +2,7 @@ use rusqlite::Connection;
 use crate::utils::rand_by_seed::LcgRng;
 use crate::generators::sqlite;
 use crate::drivers::DatabaseDriver;
+use log::info;
 
 pub struct Engine<'a> {
     pub rng: LcgRng,
@@ -22,5 +23,25 @@ impl<'a> Engine<'a> {
 
     pub fn exec(&self, conn: &mut Connection, sql: &str) -> anyhow::Result<usize> {
         self.driver.exec(conn, sql)
+    }
+
+    pub fn run(&mut self, conn: &mut Connection, count: usize) {
+        let mut i = 0;
+        while i < count {
+            let sql = self.next_sql(conn)
+                .unwrap_or_else(|| "SELECT 1;".to_string());
+            info!("Generated SQL: {}", sql);
+
+            let result = self.exec(conn, &sql);
+            match result {
+                Ok(_) => {}
+                Err(e) => {
+                    i += 1;
+                    info!("Error executing SQL with ret: [{:?}]", e);
+                    continue;
+                }
+            }
+            i += 1;
+        }
     }
 }

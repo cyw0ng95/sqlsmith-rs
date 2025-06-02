@@ -24,24 +24,7 @@ fn main() -> Result<()> {
     info!("SQLite connection prepared and verified.");
 
     let mut engine = Engine::new(0, driver.as_ref());
+    engine.run(&mut sqlite_conn, 8);
 
-    let mut i = 0;
-    while i < 8 {
-        let sql = engine.next_sql(&sqlite_conn)
-            .unwrap_or_else(|| "SELECT 1;".to_string());
-        info!("Generated SQL: {}", sql);
-
-        let result = engine.exec(&mut sqlite_conn, &sql);
-        match result {
-            Ok(_) => {}
-            Err(e) => {
-                i += 1;
-                info!("Error executing SQL with ret: [{:?}]", e);
-                continue;
-            }
-        }
-
-        i += 1;
-    }
     Ok(())
 }
