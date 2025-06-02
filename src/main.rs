@@ -3,6 +3,7 @@
 // Declare the drivers module so Rust can find its content
 mod drivers;
 mod utils;
+mod generators;
 
 use drivers::DatabaseDriver; // Import the trait for type hinting and polymorphism
 use anyhow::Result;
@@ -27,5 +28,24 @@ fn main() -> Result<()> {
     )?;
     info!("Number of rows in 'warehouse' table (SQLite): {}\n", count); // changed
 
+    let mut i = 0;
+    while i < 1000 {
+        let sql = generators::generate();
+        info!("Generated SQL: {}", sql);
+
+        let result = sqlite_conn.execute(&sql, rusqlite::params![]);
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                if e.sqlite_error() == None {
+                    i += 1;
+                    continue;
+                }
+                info!("Error executing SQL with ret: [{:?}]", e);
+            }
+        }
+
+        i += 1;
+    }
     Ok(())
 }
