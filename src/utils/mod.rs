@@ -1,2 +1,2 @@
 pub mod rand_by_seed;
-pub mod config_logger;
+pub mod logger;

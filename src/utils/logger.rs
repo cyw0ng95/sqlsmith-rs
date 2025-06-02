@@ -1,6 +1,6 @@
 use std::{io, time::SystemTime};
 
-pub fn config_fern() {
+pub fn init() {
     fern::Dispatch::new()
         .level(log::LevelFilter::Info)
         .chain(std::io::stdout())

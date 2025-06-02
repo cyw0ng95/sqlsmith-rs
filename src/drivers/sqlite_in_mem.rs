@@ -5,6 +5,7 @@ use rusqlite::Connection;
 use anyhow::{Result, Context};
 use std::fs;
 use std::path::Path;
+use log::info; // Import the log::info macro
 
 /// Represents a SQLite database driver.
 pub struct SqliteDriver {
@@ -27,7 +28,7 @@ impl DatabaseDriver for SqliteDriver {
     type Connection = Connection; // rusqlite::Connection is synchronous
 
     fn connect(&self) -> Result<Self::Connection> {
-        println!("(SQLite) Attempting to connect to: {}", self.db_path);
+        info!("(SQLite) Attempting to connect to: {}", self.db_path);
         let conn = Connection::open(&self.db_path)
             .with_context(|| format!("Failed to open SQLite database at '{}'", self.db_path))?;
 
@@ -35,20 +36,20 @@ impl DatabaseDriver for SqliteDriver {
         // This is crucial for TPC-C schema if you expect FKs to be enforced.
         conn.execute("PRAGMA foreign_keys = ON;", ())
             .context("Failed to enable foreign keys for SQLite")?;
-        println!("(SQLite) Foreign key enforcement enabled.");
+        info!("(SQLite) Foreign key enforcement enabled.");
 
         Ok(conn)
     }
 
     fn init(&self, conn: &mut Self::Connection) -> Result<()> {
-        println!("(SQLite) Executing init SQL from assets/sqlite/tpcc-create-table.sql...");
+        info!("(SQLite) Executing init SQL from assets/sqlite/tpcc-create-table.sql...");
         let sql_file_path = Path::new("assets/sqlite/tpcc-create-table.sql");
         let sql_content = fs::read_to_string(sql_file_path)
             .with_context(|| format!("Failed to read SQL file: {:?}", sql_file_path))?;
 
         conn.execute_batch(&sql_content)
             .context("Failed to execute SQLite init SQL batch")?;
-        println!("(SQLite) TPC-C tables created successfully.");
+        info!("(SQLite) TPC-C tables created successfully.");
         Ok(())
     }
 }

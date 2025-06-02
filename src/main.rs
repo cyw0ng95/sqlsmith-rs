@@ -6,17 +6,18 @@ mod utils;
 
 use drivers::DatabaseDriver; // Import the trait for type hinting and polymorphism
 use anyhow::Result;
+use log::info; // <-- Add this
 
 fn main() -> Result<()> {
-    utils::config_logger::config_fern(); // Configure logging
+    utils::logger::init(); // Configure logging
     // --- SQLite Example ---
-    println!("--- SQLite Driver ---");
+    info!("--- SQLite Driver ---"); // changed
     let sqlite_driver = drivers::sqlite_in_mem::SqliteDriver::new(":memory:"); // Or "my_database.db"
     let mut sqlite_conn = sqlite_driver.connect()?; // `connect()` is sync
-    println!("SQLite connection object obtained.");
+    info!("SQLite connection object obtained."); // changed
 
     sqlite_driver.init(&mut sqlite_conn)?; // `init()` is sync
-    println!("SQLite database initialized (TPC-C tables created).");
+    info!("SQLite database initialized (TPC-C tables created)."); // changed
 
     // Optional: Verify a table in SQLite
     let count: i32 = sqlite_conn.query_row(
@@ -24,7 +25,7 @@ fn main() -> Result<()> {
         rusqlite::params![], // Use rusqlite's params! macro for empty parameters
         |row| row.get(0)
     )?;
-    println!("Number of rows in 'warehouse' table (SQLite): {}\n", count);
+    info!("Number of rows in 'warehouse' table (SQLite): {}\n", count); // changed
 
     Ok(())
 }
