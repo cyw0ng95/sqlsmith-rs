@@ -31,9 +31,3 @@ pub fn read_profile() -> Profile {
         count: Some(8),
     }
 }
-
-pub fn profile_to_config(profile: &Profile) -> (DRIVER_KIND, usize) {
-    let kind = profile.driver.unwrap_or(DRIVER_KIND::SQLITE_IN_MEM);
-    let count = profile.count.unwrap_or(8);
-    (kind, count)
-}
