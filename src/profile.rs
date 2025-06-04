@@ -2,8 +2,9 @@ use serde::Deserialize;
 use crate::drivers::DRIVER_KIND;
 use std::fs;
 use log::info;
+use serde_json;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, serde::Serialize)] // 添加 Serialize 派生宏
 pub struct Profile {
     pub driver: Option<DRIVER_KIND>,
     pub count: Option<usize>,
@@ -25,9 +26,15 @@ pub fn read_profile() -> Profile {
             return profile;
         }
     }
-    info!("profile.json not found or invalid, using debug config: SQLITE_IN_MEM, count 8");
-    Profile {
+    info!("profile.json not found or invalid, creating default profile.json and exiting.");
+    let default_profile = Profile {
         driver: Some(DRIVER_KIND::SQLITE_IN_MEM),
         count: Some(8),
+    };
+    if let Ok(json_str) = serde_json::to_string_pretty(&default_profile) {
+        if let Err(e) = fs::write("profile.json", json_str) {
+            eprintln!("Failed to write profile.json: {}", e);
+        }
     }
+    std::process::exit(0);
 }
