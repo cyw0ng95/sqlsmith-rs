@@ -12,6 +12,7 @@ pub struct Engine<'a> {
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
+use std::time::{Instant, Duration};
 
 impl<'a> Engine<'a> {
     pub fn new(seed: u64, driver: &'a dyn DatabaseDriver<Connection = Connection>) -> Self {
@@ -58,22 +59,44 @@ impl<'a> Engine<'a> {
     }
 
     pub fn run(&mut self, conn: &mut Connection, count: usize) {
+        let start_time = Instant::now();
+        let mut last_print_time = start_time;
+        let mut executed_count = 0;
+        let mut success_count = 0;
+        let mut failed_count = 0;
+
         let mut i = 0;
         while i < count {
             let sql = self.next_sql(conn)
                 .unwrap_or_else(|| "SELECT 1;".to_string());
-            info!("Generated SQL: {}", sql);
+            // info!("Generated SQL: {}", sql);
 
+            let exec_start = Instant::now();
             let result = self.exec(conn, &sql);
+            let exec_duration = exec_start.elapsed();
+
             match result {
-                Ok(_) => {}
+                Ok(_) => {
+                    // info!("SQL executed successfully in {:?}", exec_duration);
+                    success_count += 1;
+                }
                 Err(e) => {
                     i += 1;
-                    info!("Error executing SQL with ret: [{:?}]", e);
+                    failed_count += 1;
+                    // info!("Error executing SQL with ret: [{:?}] in {:?}", e, exec_duration);
                     continue;
                 }
             }
             i += 1;
+            executed_count += 1;
+
+            let current_time = Instant::now();
+            if current_time.duration_since(last_print_time) >= Duration::from_secs(1) {
+                let elapsed_seconds = current_time.duration_since(start_time).as_secs_f64();
+                let speed = executed_count as f64 / elapsed_seconds;
+                info!("Execution speed: {:.2} SQL statements per second, Sum: Success/Failed: {}/{}", speed, success_count, failed_count);
+                last_print_time = current_time;
+            }
         }
     }
 }
