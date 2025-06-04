@@ -28,7 +28,16 @@ impl<'a> Engine<'a> {
     }
 
     pub fn exec(&self, conn: &mut Connection, sql: &str) -> anyhow::Result<usize> {
-        self.driver.exec(conn, sql)
+        if sql.trim_start().to_uppercase().starts_with("SELECT") {
+            // 处理 SELECT 语句
+            let mut stmt = conn.prepare(sql)?;
+            let mut rows = stmt.query([])?;
+            while let Some(_) = rows.next()? {}
+            Ok(0) // SELECT 语句通常返回受影响行数为 0
+        } else {
+            // 处理其他语句
+            self.driver.exec(conn, sql)
+        }
     }
 
     pub fn run(&mut self, conn: &mut Connection, count: usize) {
