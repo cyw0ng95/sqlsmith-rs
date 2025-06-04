@@ -14,6 +14,7 @@ pub struct Profile {
 pub struct StmtProb {
     pub SELECT: u64,
     pub INSERT: u64,
+    pub UPDATE: u64, // 新增 UPDATE 字段
 }
 
 pub fn read_profile() -> Profile {
@@ -29,6 +30,7 @@ pub fn read_profile() -> Profile {
         stmt_prob: Some(StmtProb {
             SELECT: 100,
             INSERT: 50,
+            UPDATE: 50, // 新增默认值
         }),
     };
     if let Ok(json_str) = serde_json::to_string_pretty(&default_profile) {
@@ -56,6 +58,7 @@ impl Profile {
             info!("Statement Probabilities:");
             info!("  SELECT: {}", stmt_prob.SELECT);
             info!("  INSERT: {}", stmt_prob.INSERT);
+            info!("  UPDATE: {}", stmt_prob.UPDATE); // 新增打印信息
         } else {
             info!("Statement Probabilities: Not specified");
         }

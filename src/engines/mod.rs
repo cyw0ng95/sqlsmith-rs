@@ -9,6 +9,10 @@ pub struct Engine<'a> {
     pub driver: &'a dyn DatabaseDriver<Connection = Connection>,
 }
 
+use serde_json::Value;
+use std::fs::File;
+use std::io::Read;
+
 impl<'a> Engine<'a> {
     pub fn new(seed: u64, driver: &'a dyn DatabaseDriver<Connection = Connection>) -> Self {
         Self {
@@ -18,12 +22,25 @@ impl<'a> Engine<'a> {
     }
 
     pub fn next_sql(&mut self, conn: &Connection) -> Option<String> {
-        let is_select = self.rng.rand().unsigned_abs() % 2 == 0;
-        let sql_kind = if is_select {
+        let mut file = File::open("profile.json").expect("Failed to open profile.json");
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).expect("Failed to read profile.json");
+        let json: Value = serde_json::from_str(&contents).expect("Failed to parse profile.json");
+
+        let select_prob = json["stmt_prob"]["SELECT"].as_u64().unwrap_or(100);
+        let insert_prob = json["stmt_prob"]["INSERT"].as_u64().unwrap_or(50);
+        let update_prob = json["stmt_prob"]["UPDATE_STMT"].as_u64().unwrap_or(30);
+        let total = select_prob + insert_prob + update_prob;
+
+        let random_num = self.rng.rand().unsigned_abs() as u64 % total;
+        let sql_kind = if random_num < select_prob {
             sqlite::SQL_KIND::SELECT
-        } else {
+        } else if random_num < select_prob + insert_prob {
             sqlite::SQL_KIND::INSERT
+        } else {
+            sqlite::SQL_KIND::UPDATE
         };
+
         sqlite::get_stmt_by_seed(conn, &mut self.rng, sql_kind)
     }
 
