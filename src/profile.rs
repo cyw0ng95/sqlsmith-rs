@@ -7,7 +7,14 @@ use crate::drivers::DRIVER_KIND;
 pub struct Profile {
     pub driver: Option<DRIVER_KIND>,
     pub count: Option<usize>,
-    pub stmt_prob: Option<StmtProb>, // 新增字段
+    pub stmt_prob: Option<StmtProb>,
+    pub debug: Option<DebugOptions>, // 新增 debug 字段
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct DebugOptions {
+    pub show_success_sql: bool,
+    pub show_failed_sql: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -32,7 +39,11 @@ pub fn read_profile() -> Profile {
             SELECT: 100,
             INSERT: 50,
             UPDATE: 50,
-            VACUUM: 20, // 新增默认值
+            VACUUM: 20,
+        }),
+        debug: Some(DebugOptions { // 新增默认 debug 选项
+            show_success_sql: false,
+            show_failed_sql: true,
         }),
     };
     if let Ok(json_str) = serde_json::to_string_pretty(&default_profile) {
@@ -61,9 +72,16 @@ impl Profile {
             info!("  SELECT: {}", stmt_prob.SELECT);
             info!("  INSERT: {}", stmt_prob.INSERT);
             info!("  UPDATE: {}", stmt_prob.UPDATE);
-            info!("  VACUUM: {}", stmt_prob.VACUUM); // 新增打印信息
+            info!("  VACUUM: {}", stmt_prob.VACUUM);
         } else {
             info!("Statement Probabilities: Not specified");
+        }
+        if let Some(debug) = &self.debug { // 新增打印 debug 信息
+            info!("Debug Options:");
+            info!("  Show Success SQL: {}", debug.show_success_sql);
+            info!("  Show Failed SQL: {}", debug.show_failed_sql);
+        } else {
+            info!("Debug Options: Not specified");
         }
     }
 }

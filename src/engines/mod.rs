@@ -3,6 +3,7 @@ use crate::utils::rand_by_seed::LcgRng;
 use crate::generators::sqlite;
 use crate::drivers::DatabaseDriver;
 use log::info;
+use crate::profile::{Profile, DebugOptions};
 
 pub struct Engine<'a> {
     pub rng: LcgRng,
@@ -62,6 +63,8 @@ impl<'a> Engine<'a> {
     }
 
     pub fn run(&mut self, conn: &mut Connection, count: usize) {
+        let profile = crate::profile::read_profile();
+        let debug_options = profile.debug;
         let start_time = Instant::now();
         let mut last_print_time = start_time;
         let mut executed_count = 0;
@@ -80,13 +83,21 @@ impl<'a> Engine<'a> {
 
             match result {
                 Ok(_) => {
-                    // info!("SQL executed successfully in {:?}", exec_duration);
+                    if let Some(options) = &debug_options {
+                        if options.show_success_sql {
+                            info!("SQL executed successfully: {}", sql);
+                        }
+                    }
                     success_count += 1;
                 }
                 Err(e) => {
+                    if let Some(options) = &debug_options {
+                        if options.show_failed_sql {
+                            info!("Error executing SQL: {}, ret: [{:?}] in {:?}", sql, e, exec_duration);
+                        }
+                    }
                     i += 1;
                     failed_count += 1;
-                    // info!("Error executing SQL with ret: [{:?}] in {:?}", e, exec_duration);
                     continue;
                 }
             }
