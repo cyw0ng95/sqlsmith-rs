@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS stock (
 );
 
 -- 7. ORDER Table
-CREATE TABLE IF NOT EXISTS "order" ( -- "order" is a keyword, so quote it
+CREATE TABLE IF NOT EXISTS customer_order (
     o_id            INTEGER NOT NULL,
     o_d_id          INTEGER NOT NULL,
     o_w_id          INTEGER NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS new_order (
     no_d_id     INTEGER NOT NULL,
     no_w_id     INTEGER NOT NULL,
     PRIMARY KEY (no_o_id, no_d_id, no_w_id),
-    FOREIGN KEY (no_o_id, no_d_id, no_w_id) REFERENCES "order"(o_id, o_d_id, o_w_id)
+    FOREIGN KEY (no_o_id, no_d_id, no_w_id) REFERENCES customer_order(o_id, o_d_id, o_w_id)
 );
 
 -- 9. ORDER_LINE Table
