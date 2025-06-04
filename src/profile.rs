@@ -1,23 +1,19 @@
-use serde::Deserialize;
-use crate::drivers::DRIVER_KIND;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use log::info;
-use serde_json;
+use crate::drivers::DRIVER_KIND;
 
-#[derive(Debug, Deserialize, serde::Serialize)] // 添加 Serialize 派生宏
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Profile {
     pub driver: Option<DRIVER_KIND>,
     pub count: Option<usize>,
+    pub stmt_prob: Option<StmtProb>, // 新增字段
 }
 
-impl Profile {
-    pub fn print(&self) {
-        log::info!(
-            "Profile: driver={:?}, count={:?}",
-            self.driver,
-            self.count
-        );
-    }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct StmtProb {
+    pub SELECT: u64,
+    pub INSERT: u64,
 }
 
 pub fn read_profile() -> Profile {
@@ -30,6 +26,10 @@ pub fn read_profile() -> Profile {
     let default_profile = Profile {
         driver: Some(DRIVER_KIND::SQLITE_IN_MEM),
         count: Some(8),
+        stmt_prob: Some(StmtProb {
+            SELECT: 100,
+            INSERT: 50,
+        }),
     };
     if let Ok(json_str) = serde_json::to_string_pretty(&default_profile) {
         if let Err(e) = fs::write("profile.json", json_str) {
@@ -37,4 +37,27 @@ pub fn read_profile() -> Profile {
         }
     }
     std::process::exit(0);
+}
+
+impl Profile {
+    pub fn print(&self) {
+        info!("Profile Information:");
+        if let Some(driver) = self.driver {
+            info!("Driver: {:?}", driver);
+        } else {
+            info!("Driver: Not specified");
+        }
+        if let Some(count) = self.count {
+            info!("Run Count: {}", count);
+        } else {
+            info!("Run Count: Not specified");
+        }
+        if let Some(stmt_prob) = &self.stmt_prob {
+            info!("Statement Probabilities:");
+            info!("  SELECT: {}", stmt_prob.SELECT);
+            info!("  INSERT: {}", stmt_prob.INSERT);
+        } else {
+            info!("Statement Probabilities: Not specified");
+        }
+    }
 }
