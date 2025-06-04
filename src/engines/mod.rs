@@ -18,7 +18,13 @@ impl<'a> Engine<'a> {
     }
 
     pub fn next_sql(&mut self, conn: &Connection) -> Option<String> {
-        sqlite::select_stmt::get_stmt_by_seed(conn, &mut self.rng)
+        let is_select = self.rng.rand().unsigned_abs() % 2 == 0;
+        let sql_kind = if is_select {
+            sqlite::SQL_KIND::SELECT
+        } else {
+            sqlite::SQL_KIND::INSERT
+        };
+        sqlite::get_stmt_by_seed(conn, &mut self.rng, sql_kind)
     }
 
     pub fn exec(&self, conn: &mut Connection, sql: &str) -> anyhow::Result<usize> {
