@@ -16,7 +16,7 @@ impl SqliteDriver {
     /// Creates a new `SqliteDriver` instance for in-memory database.
     pub fn new() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
-        let mut driver = Self { conn };
+        let driver = Self { conn };
         
         // 初始化数据库
         info!("Initializing SQLite in-memory database...");

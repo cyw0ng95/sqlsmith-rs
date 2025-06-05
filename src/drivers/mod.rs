@@ -2,6 +2,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 pub mod sqlite_in_mem;
+pub mod limbo; // <-- 添加这一行
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum DRIVER_KIND {
