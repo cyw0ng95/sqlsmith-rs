@@ -6,6 +6,7 @@ pub mod sqlite_in_mem;
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum DRIVER_KIND {
     SQLITE_IN_MEM,
+    LIMBO, // 新增 LIMBO 类型
 }
 
 pub trait DatabaseDriver {
@@ -27,6 +28,9 @@ pub fn new_conn(
             let mut conn = driver.connect()?;
             driver.init(&mut conn)?;
             Ok((Box::new(driver), conn))
+        }
+        DRIVER_KIND::LIMBO => {
+            anyhow::bail!("LIMBO driver is not implemented yet");
         }
     }
 }
