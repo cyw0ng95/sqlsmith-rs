@@ -12,6 +12,8 @@ use log::{info, error};
 use engines::Engine;
 use profile::read_profile;
 
+use crate::engines::with_driver_kind;
+
 fn main() -> Result<()> {
     utils::logger::init(); // Configure logging
 
@@ -20,8 +22,8 @@ fn main() -> Result<()> {
     let run_count = profile.count.expect("run count must be an unsigned number");
     profile.print();
 
-    // 修改: 传入 profile 参数
-    let mut engine = Engine::with_driver_kind(0, driver_kind, run_count, &profile)?;
+    // 修改：直接调用 with_driver_kind 函数
+    let mut engine = with_driver_kind(0, driver_kind, run_count, &profile)?;
     info!("SQLite connection prepared and verified.");
 
     engine.run();
