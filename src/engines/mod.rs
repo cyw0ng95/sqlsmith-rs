@@ -4,16 +4,16 @@ use crate::utils::rand_by_seed::LcgRng;
 use crate::profile::Profile;
 use crate::drivers::limbo::LimboDriver;
 
-// 定义 Engine trait
+// Define Engine trait
 pub trait Engine {
     fn run(&mut self);
     fn generate_sql(&mut self) -> String;
     fn get_driver_kind(&self) -> DRIVER_KIND;
-    // 修改返回类型
-    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = Connection>>; // 改为可变引用
+    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>>;
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>>;
 }
 
-// 为 SQLite 驱动实现 Engine trait
+// For SQLite driver implementation
 pub struct SqliteEngine<'a> {
     pub rng: LcgRng,
     pub sqlite_driver_box: Box<dyn DatabaseDriver<Connection = Connection> + 'a>,
@@ -91,8 +91,12 @@ impl<'a> Engine for SqliteEngine<'a> {
         DRIVER_KIND::SQLITE_IN_MEM
     }
     // 修改方法名
-    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = Connection>> {
+    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>> {
         Some(&mut *self.sqlite_driver_box) // 返回可变引用
+    }
+    // New implementation for Limbo driver (always None)
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>> {
+        None
     }
 }
 
@@ -144,6 +148,10 @@ impl Engine for LimboEngine {
     }
     fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = Connection>> {
         None
+    }
+    // New implementation for Limbo driver
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>> {
+        Some(&mut *self.limbo_driver_box) // Now matches LimboDriver's DatabaseDriver implementation
     }
 }
 

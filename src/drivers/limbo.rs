@@ -15,7 +15,8 @@ impl LimboDriver {
 }
 
 impl DatabaseDriver for LimboDriver {
-    type Connection = ();
+    // Use actual connection type instead of `()`
+    type Connection = limbo::Connection;
 
     fn exec(&self, sql: &str) -> Result<usize> {
         let rt = tokio::runtime::Runtime::new()?;
@@ -37,10 +38,11 @@ impl DatabaseDriver for LimboDriver {
         })
     }
 
+    // Implement connection accessors with the correct type
     fn get_connection(&self) -> &Self::Connection {
-        panic!("LimboDriver does not support get_connection");
+        &self.conn
     }
     fn get_connection_mut(&mut self) -> &mut Self::Connection {
-        panic!("LimboDriver does not support get_connection_mut");
+        &mut self.conn
     }
 }
