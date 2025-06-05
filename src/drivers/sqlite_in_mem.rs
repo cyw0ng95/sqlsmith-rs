@@ -101,4 +101,14 @@ impl DatabaseDriver for SqliteDriver {
     fn exec(&self, conn: &mut Self::Connection, sql: &str) -> Result<usize> {
         Ok(conn.execute(sql, rusqlite::params![])?)
     }
+
+    fn query(&self, conn: &mut Self::Connection, sql: &str) -> Result<usize> {
+        let mut stmt = conn.prepare(sql)?;
+        let mut rows = stmt.query(rusqlite::params![])?;
+        let mut count = 0;
+        while let Some(_) = rows.next()? {
+            count += 1;
+        }
+        Ok(count)
+    }
 }

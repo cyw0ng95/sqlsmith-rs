@@ -10,7 +10,6 @@ mod profile;
 use anyhow::Result;
 use log::{info, error};
 use engines::Engine;
-use drivers::{new_conn};
 use profile::read_profile;
 
 fn main() -> Result<()> {
@@ -21,17 +20,11 @@ fn main() -> Result<()> {
     let run_count = profile.count.expect("run count must be an unsigned number");
     profile.print();
 
-    let (driver, mut sqlite_conn) = match new_conn(driver_kind) {
-        Ok((driver, conn)) => (driver, conn),
-        Err(e) => {
-            error!("Error preparing SQLite connection: {:?}", e);
-            return Err(e);
-        }
-    };
+    // 修改: 传入 profile 参数
+    let mut engine = Engine::with_driver_kind(0, driver_kind, run_count, &profile)?;
     info!("SQLite connection prepared and verified.");
 
-    let mut engine = Engine::new(0, driver.as_ref());
-    engine.run(&mut sqlite_conn, run_count);
+    engine.run();
 
     Ok(())
 }

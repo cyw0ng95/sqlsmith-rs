@@ -11,13 +11,13 @@ pub struct Profile {
     pub debug: Option<DebugOptions>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]  // 添加 Clone
 pub struct DebugOptions {
     pub show_success_sql: bool,
     pub show_failed_sql: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]  // 添加 Clone
 pub struct StmtProb {
     pub SELECT: u64,
     pub INSERT: u64,
