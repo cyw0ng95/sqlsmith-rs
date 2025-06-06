@@ -137,8 +137,38 @@ impl Engine for LimboEngine {
 
     fn generate_sql(&mut self) -> String {
         if let Some(prob) = &self.stmt_prob {
-            // 目前 Limbo 直接返回简单 SQL 或调用专用生成器
-            "SELECT 1;".to_string()
+            let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM;
+            if total == 0 {
+                return "SELECT 1;".to_string();
+            }
+            let r = (self.rng.rand().abs() as u64) % total;
+
+            let conn = self.limbo_driver_box.get_connection_mut();
+            if r < prob.SELECT {
+                crate::generators::limbo::get_stmt_by_seed(
+                    conn,
+                    &mut self.rng,
+                    crate::generators::sqlite::SQL_KIND::SELECT,
+                ).unwrap_or_else(|| "SELECT 1;".to_string())
+            } else if r < prob.SELECT + prob.INSERT {
+                crate::generators::limbo::get_stmt_by_seed(
+                    conn,
+                    &mut self.rng,
+                    crate::generators::sqlite::SQL_KIND::INSERT,
+                ).unwrap_or_else(|| "SELECT 1;".to_string())
+            } else if r < prob.SELECT + prob.INSERT + prob.UPDATE {
+                crate::generators::limbo::get_stmt_by_seed(
+                    conn,
+                    &mut self.rng,
+                    crate::generators::sqlite::SQL_KIND::UPDATE,
+                ).unwrap_or_else(|| "SELECT 1;".to_string())
+            } else {
+                crate::generators::limbo::get_stmt_by_seed(
+                    conn,
+                    &mut self.rng,
+                    crate::generators::sqlite::SQL_KIND::VACUUM,
+                ).unwrap_or_else(|| "SELECT 1;".to_string())
+            }
         } else {
             "SELECT 1;".to_string()
         }
