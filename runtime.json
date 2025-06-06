@@ -1,0 +1,8 @@
+{
+    "mariadb": {
+        "rootPassword": "rootpassword",
+        "database": "fuzzerdb",
+        "hostPort": "13306",
+        "containerPort": "3306"
+    }
+}

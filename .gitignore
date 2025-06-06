@@ -27,3 +27,4 @@ target/
 
 # runtime file
 profile.json
+.runtime

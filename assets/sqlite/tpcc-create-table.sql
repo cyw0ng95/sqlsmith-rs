@@ -28,8 +28,7 @@ CREATE TABLE IF NOT EXISTS district (
     d_tax           REAL    NOT NULL,
     d_ytd           REAL    NOT NULL,
     d_next_o_id     INTEGER NOT NULL,
-    PRIMARY KEY (d_id, d_w_id),
-    FOREIGN KEY (d_w_id) REFERENCES warehouse(w_id)
+    PRIMARY KEY (d_id, d_w_id)
 );
 
 -- 3. CUSTOMER Table
@@ -55,8 +54,7 @@ CREATE TABLE IF NOT EXISTS customer (
     c_payment_cnt   INTEGER NOT NULL,
     c_delivery_cnt  INTEGER NOT NULL,
     c_data          TEXT    NOT NULL,
-    PRIMARY KEY (c_id, c_d_id, c_w_id),
-    FOREIGN KEY (c_d_id, c_w_id) REFERENCES district(d_id, d_w_id)
+    PRIMARY KEY (c_id, c_d_id, c_w_id)
 );
 
 -- 4. HISTORY Table
@@ -68,9 +66,7 @@ CREATE TABLE IF NOT EXISTS history (
     h_w_id      INTEGER NOT NULL,
     h_date      TEXT    NOT NULL, -- Stored as ISO8601 string (YYYY-MM-DD HH:MM:SS.SSS)
     h_amount    REAL    NOT NULL,
-    h_data      TEXT    NOT NULL,
-    FOREIGN KEY (h_c_id, h_c_d_id, h_c_w_id) REFERENCES customer(c_id, c_d_id, c_w_id),
-    FOREIGN KEY (h_d_id, h_w_id) REFERENCES district(d_id, d_w_id)
+    h_data      TEXT    NOT NULL
 );
 
 -- 5. ITEM Table
@@ -101,13 +97,11 @@ CREATE TABLE IF NOT EXISTS stock (
     s_order_cnt     INTEGER NOT NULL,
     s_remote_cnt    INTEGER NOT NULL,
     s_data          TEXT    NOT NULL,
-    PRIMARY KEY (s_i_id, s_w_id),
-    FOREIGN KEY (s_i_id) REFERENCES item(i_id),
-    FOREIGN KEY (s_w_id) REFERENCES warehouse(w_id)
+    PRIMARY KEY (s_i_id, s_w_id)
 );
 
 -- 7. ORDER Table
-CREATE TABLE IF NOT EXISTS "order" ( -- "order" is a keyword, so quote it
+CREATE TABLE IF NOT EXISTS customer_order (
     o_id            INTEGER NOT NULL,
     o_d_id          INTEGER NOT NULL,
     o_w_id          INTEGER NOT NULL,
@@ -116,8 +110,7 @@ CREATE TABLE IF NOT EXISTS "order" ( -- "order" is a keyword, so quote it
     o_carrier_id    INTEGER,          -- Can be NULL
     o_ol_cnt        INTEGER NOT NULL,
     o_all_local     INTEGER NOT NULL, -- 0 or 1 for boolean
-    PRIMARY KEY (o_id, o_d_id, o_w_id),
-    FOREIGN KEY (o_c_id, o_d_id, o_w_id) REFERENCES customer(c_id, c_d_id, c_w_id)
+    PRIMARY KEY (o_id, o_d_id, o_w_id)
 );
 
 -- 8. NEW_ORDER Table
@@ -125,8 +118,7 @@ CREATE TABLE IF NOT EXISTS new_order (
     no_o_id     INTEGER NOT NULL,
     no_d_id     INTEGER NOT NULL,
     no_w_id     INTEGER NOT NULL,
-    PRIMARY KEY (no_o_id, no_d_id, no_w_id),
-    FOREIGN KEY (no_o_id, no_d_id, no_w_id) REFERENCES "order"(o_id, o_d_id, o_w_id)
+    PRIMARY KEY (no_o_id, no_d_id, no_w_id)
 );
 
 -- 9. ORDER_LINE Table
@@ -141,8 +133,5 @@ CREATE TABLE IF NOT EXISTS order_line (
     ol_quantity     INTEGER NOT NULL DEFAULT 0,
     ol_amount       REAL    NOT NULL,
     ol_dist_info    TEXT    NOT NULL,
-    PRIMARY KEY (ol_o_id, ol_d_id, ol_w_id, ol_number),
-    FOREIGN KEY (ol_o_id, ol_d_id, ol_w_id) REFERENCES "order"(o_id, o_d_id, o_w_id),
-    FOREIGN KEY (ol_i_id) REFERENCES item(i_id),
-    FOREIGN KEY (ol_supply_w_id, ol_i_id) REFERENCES stock(s_w_id, s_i_id)
+    PRIMARY KEY (ol_o_id, ol_d_id, ol_w_id, ol_number)
 );
