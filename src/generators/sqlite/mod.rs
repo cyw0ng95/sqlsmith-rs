@@ -3,18 +3,11 @@ pub mod schema;
 
 use rusqlite::Connection;
 
-use crate::utils::rand_by_seed::LcgRng;
+use crate::{generators::SQL_KIND, utils::rand_by_seed::LcgRng};
 
 pub mod insert_stmt; // 导入 insert_stmt 模块
 pub mod update_stmt; // 确保正确导入模块
 pub mod vacuum_stmt;
-
-pub enum SQL_KIND {
-    SELECT,
-    INSERT,
-    UPDATE,
-    VACUUM, // 新增枚举项
-}
 
 pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: SQL_KIND) -> Option<String> {
     match kind {
