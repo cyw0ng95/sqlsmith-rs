@@ -3,6 +3,7 @@ pub mod select_stmt_common;
 pub mod update_stmt_common;
 pub mod insert_stmt_common;
 pub mod vacuum_stmt_common;
+pub mod pragma_stmt_common;
 
 // 通用 SQL 语句类型定义，供 limbo 和 sqlite 共享
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,7 +33,7 @@ pub fn gen_stmt(
     match (sql_kind, driver_kind) {
         (SqlKind::Select, DriverKind::Sqlite) => {
             if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::sqlite::select_stmt::get_select_stmt_by_seed(sqlite_conn, rng)
+                crate::generators::sqlite::get_stmt_by_seed(sqlite_conn, rng, SqlKind::Select)
             } else {
                 None
             }
@@ -46,7 +47,7 @@ pub fn gen_stmt(
         }
         (SqlKind::Insert, DriverKind::Sqlite) => {
             if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::sqlite::insert_stmt::get_insert_stmt_by_seed(sqlite_conn, rng)
+                crate::generators::sqlite::get_stmt_by_seed(sqlite_conn, rng, SqlKind::Insert)
             } else {
                 None
             }
@@ -60,7 +61,7 @@ pub fn gen_stmt(
         }
         (SqlKind::Update, DriverKind::Sqlite) => {
             if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::sqlite::update_stmt::get_update_stmt_by_seed(sqlite_conn, rng)
+                crate::generators::sqlite::get_stmt_by_seed(sqlite_conn, rng, SqlKind::Update)
             } else {
                 None
             }
@@ -77,7 +78,7 @@ pub fn gen_stmt(
         }
         (SqlKind::Pragma, DriverKind::Sqlite) => {
             if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::sqlite::pragma_stmt::get_pragma_stmt_by_seed(sqlite_conn, rng)
+                crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(sqlite_conn, rng)
             } else {
                 None
             }

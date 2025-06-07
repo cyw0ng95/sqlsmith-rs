@@ -1,19 +1,15 @@
-use rusqlite::Connection;
 use crate::utils::rand_by_seed::LcgRng;
+use rusqlite::Connection;
 
-/// 支持参数的 PRAGMA 类型
 enum PragmaKind {
-    NoArg(&'static str),         // 只读，无参数
-    BoolArg(&'static str),       // ON/OFF/0/1
-    IntArg(&'static str, i64, i64), // 整数参数，(name, min, max)
-    StringArg(&'static str),     // 字符串参数
+    NoArg(&'static str),
+    BoolArg(&'static str),
+    IntArg(&'static str, i64, i64),
+    StringArg(&'static str),
 }
 
-/// 随机生成一个 PRAGMA 语句（参考 https://sqlite.org/pragma.html）
 pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<String> {
     use PragmaKind::*;
-
-    // 常见 PRAGMA 及其参数类型
     const PRAGMAS: &[PragmaKind] = &[
         NoArg("integrity_check"),
         NoArg("quick_check"),
@@ -46,10 +42,8 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
         StringArg("temp_store"),
         StringArg("encoding"),
     ];
-
     let idx = (rng.rand().unsigned_abs() as usize) % PRAGMAS.len();
     let pragma = &PRAGMAS[idx];
-
     let sql = match pragma {
         NoArg(name) => format!("PRAGMA {};", name),
         BoolArg(name) => {
@@ -61,7 +55,6 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
             format!("PRAGMA {} = {};", name, val)
         }
         StringArg(name) => {
-            // 针对常见字符串参数生成
             let val = match *name {
                 "journal_mode" => {
                     const MODES: &[&str] = &["DELETE", "TRUNCATE", "PERSIST", "MEMORY", "WAL", "OFF"];
@@ -88,6 +81,5 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
             format!("PRAGMA {} = {};", name, val)
         }
     };
-
     Some(sql)
 }
