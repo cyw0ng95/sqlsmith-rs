@@ -1,5 +1,6 @@
 use limbo::Connection;
 use crate::utils::rand_by_seed::LcgRng;
+use super::schema::get_tables; // 加入这一行
 
 pub fn get_select_stmt_by_seed(conn: &Connection, rng: &mut LcgRng) -> Option<String> {
     let rt = tokio::runtime::Runtime::new().ok()?;
@@ -19,7 +20,7 @@ pub fn get_select_stmt_by_seed(conn: &Connection, rng: &mut LcgRng) -> Option<St
     }
 
     let col_count = ((rng.rand().unsigned_abs() as usize) % table.columns.len()) + 1;
-    let mut selected_cols = table.columns.clone();
+    let mut selected_cols: Vec<_> = table.columns.iter().map(|(name, _)| name.clone()).collect();
 
     for i in (1..selected_cols.len()).rev() {
         let j = (rng.rand().unsigned_abs() as usize) % (i + 1);
@@ -32,46 +33,4 @@ pub fn get_select_stmt_by_seed(conn: &Connection, rng: &mut LcgRng) -> Option<St
         selected_cols.join(", "),
         table.name
     ))
-}
-
-// Helper struct to represent table schema
-#[derive(Clone)]
-struct Table {
-    name: String,
-    columns: Vec<String>,
-}
-
-// Helper function to get tables from Limbo connection
-async fn get_tables(conn: &Connection) -> Result<Vec<Table>, Box<dyn std::error::Error>> {
-    let sql: &'static str = "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%';";
-    let mut tables = Vec::new();
-
-    let mut rows = conn.query(sql, ()).await.unwrap();
-
-    while let Ok(Some(row)) = rows.next().await {
-
-        let table_name: String = row.get_value(0).unwrap().as_text().unwrap().to_string();
-
-        let columns = get_columns(conn, &table_name).await?;
-        tables.push(Table {
-            name: table_name,
-            columns,
-        });
-    }
-    
-    Ok(tables)
-}
-
-// Helper function to get columns for a table
-async fn get_columns(conn: &Connection, table_name: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let sql = format!("PRAGMA table_info({});", table_name);
-    let mut columns = Vec::new();
-    
-    let mut rows = conn.query(&sql, ()).await?;
-    while let Ok(Some(row)) = rows.next().await {
-        let column_name: String =  row.get_value(1).unwrap().as_text().unwrap().to_string();
-        columns.push(column_name);
-    }
-    
-    Ok(columns)
 }
