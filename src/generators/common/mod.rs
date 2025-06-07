@@ -39,7 +39,7 @@ pub fn gen_stmt(
         }
         (SqlKind::Select, DriverKind::Limbo) => {
             if let Some(limbo_conn) = conn.downcast_ref::<limbo::Connection>() {
-                crate::generators::limbo::select_stmt::get_select_stmt_by_seed(limbo_conn, rng)
+                crate::generators::limbo::get_stmt_by_seed(limbo_conn, rng, SqlKind::Select)
             } else {
                 None
             }
@@ -53,7 +53,7 @@ pub fn gen_stmt(
         }
         (SqlKind::Insert, DriverKind::Limbo) => {
             if let Some(limbo_conn) = conn.downcast_ref::<limbo::Connection>() {
-                crate::generators::limbo::insert_stmt::get_insert_stmt_by_seed(limbo_conn, rng)
+                crate::generators::limbo::get_stmt_by_seed(limbo_conn, rng, SqlKind::Insert)
             } else {
                 None
             }
@@ -67,7 +67,7 @@ pub fn gen_stmt(
         }
         (SqlKind::Update, DriverKind::Limbo) => {
             if let Some(limbo_conn) = conn.downcast_ref::<limbo::Connection>() {
-                crate::generators::limbo::update_stmt::get_update_stmt_by_seed(limbo_conn, rng)
+                crate::generators::limbo::get_stmt_by_seed(limbo_conn, rng, SqlKind::Update)
             } else {
                 None
             }
