@@ -22,73 +22,97 @@ pub struct SqliteEngine<'a> {
     pub debug: Option<crate::profile::DebugOptions>,
 }
 
+fn run_engine_loop<F>(run_count: usize, debug: &Option<crate::profile::DebugOptions>, mut gen_and_exec: F)
+where
+    F: FnMut() -> anyhow::Result<(String, usize)>,
+{
+    let mut i = 0;
+    while i < run_count {
+        match gen_and_exec() {
+            Ok((sql, affected)) => {
+                if let Some(debug) = debug {
+                    if debug.show_success_sql {
+                        log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
+                    }
+                }
+            }
+            Err(e) => {
+                if let Some(debug) = debug {
+                    if debug.show_failed_sql {
+                        log::info!("Error executing SQL: {} with ret: [{:?}]", "<unknown>", e);
+                    }
+                }
+            }
+        }
+        i += 1;
+    }
+}
+
+fn generate_sql_by_prob<F>(prob: &crate::profile::StmtProb, rng: &mut crate::utils::rand_by_seed::LcgRng, mut get_stmt: F) -> String
+where
+    F: FnMut(crate::generators::sqlite::SQL_KIND, &mut crate::utils::rand_by_seed::LcgRng) -> Option<String>,
+{
+    let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA;
+    if total == 0 {
+        return "SELECT 1;".to_string();
+    }
+    let r = (rng.rand().abs() as u64) % total;
+    if r < prob.SELECT {
+        get_stmt(crate::generators::sqlite::SQL_KIND::SELECT, rng)
+    } else if r < prob.SELECT + prob.INSERT {
+        get_stmt(crate::generators::sqlite::SQL_KIND::INSERT, rng)
+    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE {
+        get_stmt(crate::generators::sqlite::SQL_KIND::UPDATE, rng)
+    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM {
+        get_stmt(crate::generators::sqlite::SQL_KIND::VACUUM, rng)
+    } else {
+        get_stmt(crate::generators::sqlite::SQL_KIND::PRAGMA, rng)
+    }
+    .unwrap_or_else(|| "SELECT 1;".to_string())
+}
+
 impl<'a> Engine for SqliteEngine<'a> {
     fn run(&mut self) {
-        let mut i = 0;
-        while i < self.run_count {
-            let sql = self.generate_sql();
+        let debug = &self.debug;
+        let prob = &self.stmt_prob;
+        let run_count = self.run_count;
+        let rng = &mut self.rng;
+        for _ in 0..run_count {
+            let conn = self.sqlite_driver_box.get_connection_mut();
+            let sql = if let Some(prob) = prob {
+                generate_sql_by_prob(prob, rng, |kind, rng| {
+                    crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
+                })
+            } else {
+                "SELECT 1;".to_string()
+            };
             let result = self.sqlite_driver_box.exec(&sql);
-
             match result {
                 Ok(affected) => {
-                    if let Some(debug) = &self.debug {
+                    if let Some(debug) = debug {
                         if debug.show_success_sql {
                             log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
                         }
                     }
                 }
                 Err(e) => {
-                    if let Some(debug) = &self.debug {
+                    if let Some(debug) = debug {
                         if debug.show_failed_sql {
                             log::info!("Error executing SQL: {} with ret: [{:?}]", sql, e);
                         }
                     }
                 }
             }
-            i += 1;
         }
     }
 
     fn generate_sql(&mut self) -> String {
+        let conn = self.sqlite_driver_box.get_connection_mut();
+        let rng = &mut self.rng;
         if let Some(prob) = &self.stmt_prob {
-            let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA; // 加上 PRAGMA
-            if total == 0 {
-                return "SELECT 1;".to_string();
-            }
-            let r = (self.rng.rand().abs() as u64) % total;
-
-            let conn = self.sqlite_driver_box.get_connection_mut();
-            if r < prob.SELECT {
-                crate::generators::sqlite::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::SELECT,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else if r < prob.SELECT + prob.INSERT {
-                crate::generators::sqlite::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::INSERT,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else if r < prob.SELECT + prob.INSERT + prob.UPDATE {
-                crate::generators::sqlite::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::UPDATE,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM {
-                crate::generators::sqlite::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::VACUUM,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else {
-                crate::generators::sqlite::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::PRAGMA,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            }
+            generate_sql_by_prob(prob, rng, |kind, rng| {
+                crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
+            })
         } else {
             "SELECT 1;".to_string()
         }
@@ -116,71 +140,46 @@ pub struct LimboEngine {
 
 impl Engine for LimboEngine {
     fn run(&mut self) {
-        let mut i = 0;
-        while i < self.run_count {
-            let sql = self.generate_sql();
+        let debug = &self.debug;
+        let prob = &self.stmt_prob;
+        let run_count = self.run_count;
+        let rng = &mut self.rng;
+        for _ in 0..run_count {
+            let conn = self.limbo_driver_box.get_connection_mut();
+            let sql = if let Some(prob) = prob {
+                generate_sql_by_prob(prob, rng, |kind, rng| {
+                    crate::generators::limbo::get_stmt_by_seed(conn, rng, kind)
+                })
+            } else {
+                "SELECT 1;".to_string()
+            };
             let result = self.limbo_driver_box.exec(&sql);
-
             match result {
                 Ok(affected) => {
-                    if let Some(debug) = &self.debug {
+                    if let Some(debug) = debug {
                         if debug.show_success_sql {
                             log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
                         }
                     }
                 }
                 Err(e) => {
-                    if let Some(debug) = &self.debug {
+                    if let Some(debug) = debug {
                         if debug.show_failed_sql {
                             log::info!("Error executing SQL: {} with ret: [{:?}]", sql, e);
                         }
                     }
                 }
             }
-            i += 1;
         }
     }
 
     fn generate_sql(&mut self) -> String {
+        let conn = self.limbo_driver_box.get_connection_mut();
+        let rng = &mut self.rng;
         if let Some(prob) = &self.stmt_prob {
-            let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA;
-            if total == 0 {
-                return "SELECT 1;".to_string();
-            }
-            let r = (self.rng.rand().abs() as u64) % total;
-
-            let conn = self.limbo_driver_box.get_connection_mut();
-            if r < prob.SELECT {
-                crate::generators::limbo::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::SELECT,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else if r < prob.SELECT + prob.INSERT {
-                crate::generators::limbo::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::INSERT,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else if r < prob.SELECT + prob.INSERT + prob.UPDATE {
-                crate::generators::limbo::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::UPDATE,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM {
-                crate::generators::limbo::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::VACUUM,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else {
-                crate::generators::limbo::get_stmt_by_seed(
-                    conn,
-                    &mut self.rng,
-                    crate::generators::sqlite::SQL_KIND::PRAGMA,
-                ).unwrap_or_else(|| "SELECT 1;".to_string())
-            }
+            generate_sql_by_prob(prob, rng, |kind, rng| {
+                crate::generators::limbo::get_stmt_by_seed(conn, rng, kind)
+            })
         } else {
             "SELECT 1;".to_string()
         }
