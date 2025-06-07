@@ -13,6 +13,7 @@ jobs:
       - run: cargo --version
       - run: cargo test
       - run: cargo build
+      - sonarcloud/scan
 
 orbs:
   sonarcloud: sonarsource/sonarcloud@2.0.0
@@ -23,4 +24,5 @@ workflows:
   say-hello-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
     # Inside the workflow, you define the jobs you want to run.
     jobs:
-      - build
+      - build:
+          context: SonarCloud
