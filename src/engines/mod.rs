@@ -51,7 +51,7 @@ impl<'a> Engine for SqliteEngine<'a> {
 
     fn generate_sql(&mut self) -> String {
         if let Some(prob) = &self.stmt_prob {
-            let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM;
+            let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA; // 加上 PRAGMA
             if total == 0 {
                 return "SELECT 1;".to_string();
             }
@@ -76,11 +76,17 @@ impl<'a> Engine for SqliteEngine<'a> {
                     &mut self.rng,
                     crate::generators::sqlite::SQL_KIND::UPDATE,
                 ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else {
+            } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM {
                 crate::generators::sqlite::get_stmt_by_seed(
                     conn,
                     &mut self.rng,
                     crate::generators::sqlite::SQL_KIND::VACUUM,
+                ).unwrap_or_else(|| "SELECT 1;".to_string())
+            } else {
+                crate::generators::sqlite::get_stmt_by_seed(
+                    conn,
+                    &mut self.rng,
+                    crate::generators::sqlite::SQL_KIND::PRAGMA,
                 ).unwrap_or_else(|| "SELECT 1;".to_string())
             }
         } else {
@@ -137,7 +143,7 @@ impl Engine for LimboEngine {
 
     fn generate_sql(&mut self) -> String {
         if let Some(prob) = &self.stmt_prob {
-            let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM;
+            let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA;
             if total == 0 {
                 return "SELECT 1;".to_string();
             }
@@ -162,11 +168,17 @@ impl Engine for LimboEngine {
                     &mut self.rng,
                     crate::generators::sqlite::SQL_KIND::UPDATE,
                 ).unwrap_or_else(|| "SELECT 1;".to_string())
-            } else {
+            } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM {
                 crate::generators::limbo::get_stmt_by_seed(
                     conn,
                     &mut self.rng,
                     crate::generators::sqlite::SQL_KIND::VACUUM,
+                ).unwrap_or_else(|| "SELECT 1;".to_string())
+            } else {
+                crate::generators::limbo::get_stmt_by_seed(
+                    conn,
+                    &mut self.rng,
+                    crate::generators::sqlite::SQL_KIND::PRAGMA,
                 ).unwrap_or_else(|| "SELECT 1;".to_string())
             }
         } else {

@@ -23,6 +23,7 @@ pub struct StmtProb {
     pub INSERT: u64,
     pub UPDATE: u64,
     pub VACUUM: u64,
+    pub PRAGMA: u64, // 新增
 }
 
 pub fn read_profile() -> Profile {
@@ -69,11 +70,13 @@ pub fn read_profile() -> Profile {
     let insert = prompt("INSERT probability", 50u64);
     let update = prompt("UPDATE probability", 50u64);
     let vacuum = prompt("VACUUM probability", 20u64);
+    let pragma = prompt("PRAGMA probability", 10u64); // 新增
     let stmt_prob = Some(StmtProb {
         SELECT: select,
         INSERT: insert,
         UPDATE: update,
         VACUUM: vacuum,
+        PRAGMA: pragma, // 新增
     });
 
     // debug options
@@ -116,6 +119,7 @@ impl Profile {
             items.push(format!("INSERT={}", stmt_prob.INSERT));
             items.push(format!("UPDATE={}", stmt_prob.UPDATE));
             items.push(format!("VACUUM={}", stmt_prob.VACUUM));
+            items.push(format!("PRAGMA={}", stmt_prob.PRAGMA)); // 新增
         }
         if let Some(debug) = &self.debug {
             items.push(format!("show_success_sql={}", debug.show_success_sql));

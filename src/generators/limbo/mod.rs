@@ -13,5 +13,9 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: super::SQL
         super::SQL_KIND::INSERT => insert_stmt::get_insert_stmt_by_seed(conn, seeder),
         super::SQL_KIND::UPDATE => update_stmt::get_update_stmt_by_seed(conn, seeder),
         super::SQL_KIND::VACUUM => vacuum_stmt::get_vacuum_stmt_by_seed(conn, seeder),
+        super::SQL_KIND::PRAGMA => {
+            // Limbo does not support PRAGMA statements, return None
+            None
+        }
     }
 }
