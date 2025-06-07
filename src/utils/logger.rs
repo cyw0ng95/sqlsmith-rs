@@ -1,4 +1,4 @@
-use std::{io, time::SystemTime};
+use std::time::SystemTime;
 
 pub fn init() {
     fern::Dispatch::new()

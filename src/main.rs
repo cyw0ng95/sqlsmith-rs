@@ -8,7 +8,7 @@ mod engines;
 mod profile;
 
 use anyhow::Result;
-use log::{info, error};
+use log::info;
 use engines::Engine;
 use profile::read_profile;
 

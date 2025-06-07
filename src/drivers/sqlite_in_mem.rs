@@ -1,7 +1,7 @@
 // src/drivers/sqlite.rs
 
 use super::DatabaseDriver;
-use anyhow::{Result, Context};
+use anyhow::Result;
 use log::info;
 use rusqlite::Connection;
 use std::fs;

@@ -1,6 +1,6 @@
 use limbo::Connection;
 use crate::utils::rand_by_seed::LcgRng;
-use super::schema::{get_tables, Table};
+use super::schema::get_tables;
 
 pub fn get_insert_stmt_by_seed(conn: &Connection, rng: &mut LcgRng) -> Option<String> {
     let rt = tokio::runtime::Runtime::new().ok()?;
