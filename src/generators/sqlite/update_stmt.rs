@@ -1,70 +1,54 @@
 use rusqlite::Connection;
 use crate::generators::sqlite::schema;
 use crate::utils::rand_by_seed::LcgRng;
+use crate::generators::common::update_stmt_common::{gen_update_stmt, TableColumnLike};
+
+struct TableWithColumns<'a> {
+    name: &'a str,
+    columns: Vec<(String, String)>,
+}
+
+impl<'a> TableColumnLike for TableWithColumns<'a> {
+    fn name(&self) -> &str {
+        self.name
+    }
+    fn columns(&self) -> Vec<(String, String)> {
+        self.columns.clone()
+    }
+}
 
 pub fn get_update_stmt_by_seed(sqlite_conn: &Connection, rng: &mut LcgRng) -> Option<String> {
     let tables = match schema::get(sqlite_conn) {
         Ok(t) if !t.is_empty() => t,
         _ => return None,
     };
-
-    let table_idx = (rng.rand().unsigned_abs() as usize) % tables.len();
-    let table = &tables[table_idx];
-
-    // 使用 PRAGMA 语句获取表的列信息
-    let mut stmt = match sqlite_conn.prepare(&format!("PRAGMA table_info({})", table.name)) {
-        Ok(stmt) => stmt,
-        Err(_) => return None,
-    };
-
-    let columns_info = match stmt.query_map([], |row| {
-        Ok((
-            row.get::<_, String>(1)?,
-            row.get::<_, String>(2)?,
-        ))
-    }) {
-        Ok(rows) => {
-            let mut info = Vec::new();
-            for row in rows {
-                if let Ok((name, col_type)) = row {
-                    info.push((name, col_type));
+    let mut tables_with_columns = Vec::new();
+    for table in &tables {
+        let mut stmt = match sqlite_conn.prepare(&format!("PRAGMA table_info({})", table.name)) {
+            Ok(stmt) => stmt,
+            Err(_) => continue,
+        };
+        let columns_info = match stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        }) {
+            Ok(rows) => {
+                let mut info = Vec::new();
+                for row in rows {
+                    if let Ok((name, col_type)) = row {
+                        info.push((name, col_type));
+                    }
                 }
+                info
             }
-            info
-        }
-        Err(_) => return None,
-    };
-
-    if columns_info.is_empty() {
-        return None;
+            Err(_) => continue,
+        };
+        tables_with_columns.push(TableWithColumns {
+            name: &table.name,
+            columns: columns_info,
+        });
     }
-
-    // 随机选择一个列进行更新
-    let random_index = (rng.rand().unsigned_abs() as usize) % columns_info.len();
-    let (col_name, col_type) = &columns_info[random_index];
-
-    let random_value = match col_type.as_str() {
-        "INTEGER" => format!("{}", rng.rand().unsigned_abs() % 1000),
-        "TEXT" => {
-            let mut text = String::new();
-            for _ in 0..10 {
-                let char_code = (rng.rand().unsigned_abs() % 26) + 97;
-                text.push(char_code as u8 as char);
-            }
-            format!("'{}'", text)
-        }
-        "REAL" => {
-            let random_num = (rng.rand().unsigned_abs() % 10000) as f64 / 100.0;
-            format!("{:.2}", random_num)
-        }
-        _ => "'default_value'".to_string(),
-    };
-
-    // 简单示例，不添加 WHERE 子句，更新所有行
-    Some(format!(
-        "UPDATE `{}` SET {} = {};",
-        table.name,
-        col_name,
-        random_value
-    ))
+    gen_update_stmt(&tables_with_columns, rng)
 }

@@ -1,13 +1,14 @@
 use crate::drivers::DatabaseDriver;
 use crate::engines::Engine;
-use crate::{drivers::DRIVER_KIND, generators::sqlite::SQL_KIND, utils::rand_by_seed::LcgRng};
+use crate::{drivers::DRIVER_KIND, generators::common::SqlKind, utils::rand_by_seed::LcgRng};
 
 pub mod sqlite;
 pub mod limbo;
+pub mod common;
 
 pub fn get_stmt_by_seed(
     seeder: &mut LcgRng,
-    kind: SQL_KIND,
+    kind: SqlKind,
     mut engine: Box<dyn Engine>,
 ) -> Option<String> {
     match engine.get_driver_kind() {

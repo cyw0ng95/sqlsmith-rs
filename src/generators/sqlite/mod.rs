@@ -4,26 +4,12 @@ pub mod schema;
 use rusqlite::Connection;
 
 use crate::utils::rand_by_seed::LcgRng;
+use crate::generators::common::{gen_stmt, DriverKind, SqlKind};
 
 pub mod insert_stmt; // 导入 insert_stmt 模块
 pub mod update_stmt; // 确保正确导入模块
-pub mod vacuum_stmt;
 pub mod pragma_stmt; // 新增 pragma_stmt 模块
 
-pub enum SQL_KIND {
-    SELECT,
-    INSERT,
-    UPDATE,
-    VACUUM, // 新增枚举项
-    PRAGMA,
-}
-
-pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: SQL_KIND) -> Option<String> {
-    match kind {
-        SQL_KIND::SELECT => select_stmt::get_select_stmt_by_seed(sqlite_conn, seeder),
-        SQL_KIND::INSERT => insert_stmt::get_insert_stmt_by_seed(sqlite_conn, seeder),
-        SQL_KIND::UPDATE => update_stmt::get_update_stmt_by_seed(sqlite_conn, seeder),
-        SQL_KIND::VACUUM => vacuum_stmt::get_vacuum_stmt_by_seed(sqlite_conn, seeder), // 新增处理逻辑
-        SQL_KIND::PRAGMA => pragma_stmt::get_pragma_stmt_by_seed(sqlite_conn, seeder), // 新增处理逻辑
-    }
+pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -> Option<String> {
+    gen_stmt(kind, DriverKind::Sqlite, sqlite_conn, seeder)
 }

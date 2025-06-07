@@ -3,6 +3,7 @@ use crate::drivers::{DatabaseDriver, DRIVER_KIND, new_conn};
 use crate::utils::rand_by_seed::LcgRng;
 use crate::profile::Profile;
 use crate::drivers::limbo::LimboDriver;
+use crate::generators::common::SqlKind;
 
 // Define Engine trait
 pub trait Engine {
@@ -50,7 +51,7 @@ where
 
 fn generate_sql_by_prob<F>(prob: &crate::profile::StmtProb, rng: &mut crate::utils::rand_by_seed::LcgRng, mut get_stmt: F) -> String
 where
-    F: FnMut(crate::generators::sqlite::SQL_KIND, &mut crate::utils::rand_by_seed::LcgRng) -> Option<String>,
+    F: FnMut(SqlKind, &mut crate::utils::rand_by_seed::LcgRng) -> Option<String>,
 {
     let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA;
     if total == 0 {
@@ -58,15 +59,15 @@ where
     }
     let r = (rng.rand().abs() as u64) % total;
     if r < prob.SELECT {
-        get_stmt(crate::generators::sqlite::SQL_KIND::SELECT, rng)
+        get_stmt(SqlKind::Select, rng)
     } else if r < prob.SELECT + prob.INSERT {
-        get_stmt(crate::generators::sqlite::SQL_KIND::INSERT, rng)
+        get_stmt(SqlKind::Insert, rng)
     } else if r < prob.SELECT + prob.INSERT + prob.UPDATE {
-        get_stmt(crate::generators::sqlite::SQL_KIND::UPDATE, rng)
+        get_stmt(SqlKind::Update, rng)
     } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM {
-        get_stmt(crate::generators::sqlite::SQL_KIND::VACUUM, rng)
+        get_stmt(SqlKind::Vacuum, rng)
     } else {
-        get_stmt(crate::generators::sqlite::SQL_KIND::PRAGMA, rng)
+        get_stmt(SqlKind::Pragma, rng)
     }
     .unwrap_or_else(|| "SELECT 1;".to_string())
 }
