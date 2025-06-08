@@ -1526,6 +1526,7 @@ dependencies = [
  "color-eyre",
  "crossterm 0.29.0",
  "ratatui",
+ "sqlsmith-rs-common",
  "strum 0.27.1",
 ]
 

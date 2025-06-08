@@ -28,3 +28,4 @@ target/
 # runtime file
 profile.json
 .runtime
+sqlsmith-rs.log
