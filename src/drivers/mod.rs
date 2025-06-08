@@ -2,12 +2,12 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 pub mod sqlite_in_mem;
-pub mod limbo; // <-- 添加这一行
+pub mod limbo_in_mem; // <-- 添加这一行
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum DRIVER_KIND {
     SQLITE_IN_MEM,
-    LIMBO, // 新增 LIMBO 类型
+    LIMBO_IN_MEM, // 新增 LIMBO 类型
 }
 
 pub trait DatabaseDriver {
@@ -29,7 +29,7 @@ pub fn new_conn(
             let driver = sqlite_in_mem::SqliteDriver::new()?;
             Ok(Box::new(driver))
         }
-        DRIVER_KIND::LIMBO => {
+        DRIVER_KIND::LIMBO_IN_MEM => {
             anyhow::bail!("LIMBO driver is not implemented")
         }
     }

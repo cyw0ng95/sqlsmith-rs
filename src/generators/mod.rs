@@ -23,7 +23,7 @@ pub fn get_stmt_by_seed(
             };
             sqlite::get_stmt_by_seed(conn, seeder, kind)
         }
-        DRIVER_KIND::LIMBO => {
+        DRIVER_KIND::LIMBO_IN_MEM => {
             let driver_box = engine.get_limbo_driver_box();
             let conn = match driver_box {
                 Some(box_instance) => box_instance.get_connection_mut(),
