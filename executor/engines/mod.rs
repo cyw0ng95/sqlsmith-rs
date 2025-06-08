@@ -1,3 +1,4 @@
+use log::info;
 use rusqlite::Connection;
 use serde_json::error;
 use sqlsmith_rs_drivers::{DatabaseDriver, DRIVER_KIND, new_conn};
@@ -81,6 +82,11 @@ impl<'a> Engine for SqliteEngine<'a> {
         let rng = &mut self.rng;
         // 定义可忽略的错误代码列表
         let ignorable_errors = vec![rusqlite::ErrorCode::ConstraintViolation];
+
+        let success_count = std::sync::atomic::AtomicUsize::new(0);
+        let failed_expected_count = std::sync::atomic::AtomicUsize::new(0);
+        let failed_new_count = std::sync::atomic::AtomicUsize::new(0);
+
         for _ in 0..run_count {
             let conn = self.sqlite_driver_box.get_connection_mut();
             let sql = if let Some(prob) = prob {
@@ -98,6 +104,7 @@ impl<'a> Engine for SqliteEngine<'a> {
                             log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
                         }
                     }
+                    success_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 }
                 Err(e) => {
                     if let Some(debug) = debug {
@@ -112,13 +119,18 @@ impl<'a> Engine for SqliteEngine<'a> {
                             };
 
                             if !ignorable_errors.contains(&error_code) {
+                                failed_new_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                                 log::info!("Error executing SQL: {} with ret: [{:?}]", sql, error_code);
+                            } else {
+                                failed_expected_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             }
                         }
                     }
                 }
             }
         }
+
+        info!("finish exec, success/failed_exp/failed_new: {:?}/{:?}/{:?}", success_count, failed_expected_count, failed_new_count);
     }
 
     fn generate_sql(&mut self) -> String {
