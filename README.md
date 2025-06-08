@@ -5,6 +5,14 @@
 `sqlsmith-rs` is a SQL testing tool written in Rust. It can generate and execute random SQL statements, with support for SQLite in-memory databases and Limbo databases. The current version of the project is v0.1.2.
 
 ## Version Information
+
+### v0.1.3
+
+- **Improvements**:
+  - **CI Integration**: Added circle-ci and sonarcloud to assist building.
+  - **Workspace Integration**: Added workspace to split logic into server and executor.
+  - **Simplify**: Refactored code to reduce duplication in some modules.
+
 ### v0.1.2
 - **New Features**:
   - **PRAGMA Support**: Added support for PRAGMA statements generation in both SQLite and Limbo drivers.
