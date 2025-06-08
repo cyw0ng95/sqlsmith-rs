@@ -1,4 +1,5 @@
 use rusqlite::Connection;
+use serde_json::error;
 use sqlsmith_rs_drivers::{DatabaseDriver, DRIVER_KIND, new_conn};
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use sqlsmith_rs_common::profile::Profile;
@@ -78,6 +79,8 @@ impl<'a> Engine for SqliteEngine<'a> {
         let prob = &self.stmt_prob;
         let run_count = self.run_count;
         let rng = &mut self.rng;
+        // 定义可忽略的错误代码列表
+        let ignorable_errors = vec![rusqlite::ErrorCode::ConstraintViolation];
         for _ in 0..run_count {
             let conn = self.sqlite_driver_box.get_connection_mut();
             let sql = if let Some(prob) = prob {
@@ -99,7 +102,18 @@ impl<'a> Engine for SqliteEngine<'a> {
                 Err(e) => {
                     if let Some(debug) = debug {
                         if debug.show_failed_sql {
-                            log::info!("Error executing SQL: {} with ret: [{:?}]", sql, e);
+                            let error_code = if let Some(rusqlite_error) = e.downcast_ref::<rusqlite::Error>() {
+                                match rusqlite_error {
+                                    rusqlite::Error::SqliteFailure(errcode, _) => errcode.code,
+                                    _ => rusqlite::ErrorCode::Unknown
+                                }
+                            } else {
+                                rusqlite::ErrorCode::Unknown
+                            };
+
+                            if !ignorable_errors.contains(&error_code) {
+                                log::info!("Error executing SQL: {} with ret: [{:?}]", sql, error_code);
+                            }
                         }
                     }
                 }

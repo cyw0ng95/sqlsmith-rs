@@ -81,7 +81,19 @@ impl DatabaseDriver for SqliteDriver {
     type Connection = Connection;
 
     fn exec(&self, sql: &str) -> Result<usize> {
-        Ok(self.conn.execute(sql, [])?) // 移除分号
+        // 检查是否为查询语句，简单通过常见关键字判断
+        let lower_sql = sql.to_lowercase();
+        if lower_sql.starts_with("select") || lower_sql.starts_with("pragma") {
+            let mut stmt = self.conn.prepare(sql)?;
+            let mut rows = stmt.query([])?;
+            let mut count = 0;
+            while let Some(_) = rows.next()? {
+                count += 1;
+            }
+            Ok(count)
+        } else {
+            Ok(self.conn.execute(sql, [])?)
+        }
     }
 
     fn query(&self, sql: &str) -> Result<usize> {
