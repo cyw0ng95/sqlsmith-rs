@@ -20,16 +20,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
   <main>
-    <TheWelcome />
+    <el-button>Default</el-button>
     <div v-if="profileData">
       <pre>{{ JSON.stringify(profileData, null, 2) }}</pre>
     </div>
