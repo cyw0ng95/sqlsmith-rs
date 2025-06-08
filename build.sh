@@ -8,7 +8,7 @@ fi
 cd view && {
     pnpm install && \
         pnpm run dev &
-}
+} && cd ~-
 
 cargo build && \
     cargo test && \

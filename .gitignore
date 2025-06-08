@@ -29,3 +29,6 @@ target/
 profile.json
 .runtime
 sqlsmith-rs.log
+
+# editor
+**/.vscode

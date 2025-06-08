@@ -108,6 +108,12 @@ pub fn read_profile() -> Profile {
     std::process::exit(0);
 }
 
+pub fn write_profile(profile: &Profile) -> Result<(), std::io::Error> {
+    let json_str = serde_json::to_string_pretty(profile).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    fs::write("profile.json", json_str)?;
+    Ok(())
+}
+
 impl Profile {
     pub fn print(&self) {
         let mut items = vec![];

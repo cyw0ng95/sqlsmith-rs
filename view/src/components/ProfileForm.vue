@@ -37,6 +37,8 @@
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="updateProfile">Update Profile</el-button>
+        <!-- 新增运行按钮 -->
+        <el-button type="success" @click="runAction">Run</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -44,7 +46,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { fetchProfile, updateProfileCall, runRequest } from './request.js'; // 引入新函数
 
 const profile = ref({
   driver: 'SQLITE_IN_MEM',
@@ -81,8 +83,8 @@ const rules = {
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://127.0.0.1:8080/profile/get');
-    profile.value = response.data;
+    const data = await fetchProfile();
+    profile.value = data;
   } catch (error) {
     console.error('Failed to fetch profile:', error);
   }
@@ -91,11 +93,20 @@ onMounted(async () => {
 const updateProfile = async () => {
   try {
     await profileForm.value.validate();
-    await axios.put('http://127.0.0.1:8080/profile.json', profile.value);
-    alert('Profile updated successfully!');
+    const updateJson = JSON.stringify(profile.value);
+    await updateProfileCall(updateJson);
+    console.log('Profile updated successfully');
   } catch (error) {
     console.error('Failed to update profile:', error);
-    alert('Failed to update profile. Please check the form.');
+  }
+};
+
+const runAction = async () => {
+  try {
+    await runRequest();
+    console.log('Run request executed successfully');
+  } catch (error) {
+    console.error('Failed to execute run request:', error);
   }
 };
 </script>
