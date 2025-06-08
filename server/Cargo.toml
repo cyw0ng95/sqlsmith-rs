@@ -8,5 +8,7 @@ name = "server"
 path = "main.rs"
 
 [dependencies]
+actix-web = "4.11.0"
 anyhow = "1.0.98"
+serde_json = "1.0.140"
 sqlsmith-rs-common = { path = "../common" }
