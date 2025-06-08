@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 use crate::drivers::{DatabaseDriver, DRIVER_KIND, new_conn};
-use crate::utils::rand_by_seed::LcgRng;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use crate::profile::Profile;
 use crate::drivers::limbo_in_mem::LimboDriver;
 use crate::generators::common::SqlKind;
@@ -49,9 +49,9 @@ where
     }
 }
 
-fn generate_sql_by_prob<F>(prob: &crate::profile::StmtProb, rng: &mut crate::utils::rand_by_seed::LcgRng, mut get_stmt: F) -> String
+fn generate_sql_by_prob<F>(prob: &crate::profile::StmtProb, rng: &mut sqlsmith_rs_common::rand_by_seed::LcgRng, mut get_stmt: F) -> String
 where
-    F: FnMut(SqlKind, &mut crate::utils::rand_by_seed::LcgRng) -> Option<String>,
+    F: FnMut(SqlKind, &mut sqlsmith_rs_common::rand_by_seed::LcgRng) -> Option<String>,
 {
     let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA;
     if total == 0 {

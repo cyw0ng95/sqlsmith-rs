@@ -17,7 +17,7 @@ pub enum SqlKind {
     // ...如有需要可扩展
 }
 
-use crate::utils::rand_by_seed::LcgRng;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 
 pub enum DriverKind {
     Sqlite,

@@ -2,5 +2,6 @@
 resolver = "3"
 members = [
     "executor",
-    "server"
+    "server",
+    "common"
 ]

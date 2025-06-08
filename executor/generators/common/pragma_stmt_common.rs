@@ -1,4 +1,4 @@
-use crate::utils::rand_by_seed::LcgRng;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use rusqlite::Connection;
 
 enum PragmaKind {

@@ -1,6 +1,6 @@
 // 通用 SELECT 语句生成逻辑，供 limbo/sqlite 共享
 // TableInfo: 需实现 name: &str, columns: &[String] trait
-use crate::utils::rand_by_seed::LcgRng;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 
 pub trait TableLike {
     fn name(&self) -> &str;

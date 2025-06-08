@@ -1,5 +1,5 @@
 use limbo::Connection;
-use crate::{utils::rand_by_seed::LcgRng};
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 pub mod schema;
 
 use crate::generators::common::{gen_stmt, DriverKind, SqlKind};

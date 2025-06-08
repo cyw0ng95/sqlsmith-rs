@@ -2,7 +2,6 @@
 
 // Declare the drivers module so Rust can find its content
 mod drivers;
-mod utils;
 mod generators;
 mod engines;
 mod profile;
@@ -15,7 +14,7 @@ use profile::read_profile;
 use crate::engines::with_driver_kind;
 
 fn main() -> Result<()> {
-    utils::logger::init(); // Configure logging
+    sqlsmith_rs_common::logger::init(); // Configure logging
 
     let profile = read_profile();
     let driver_kind = profile.driver.expect("driver kind must be specified");

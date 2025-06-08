@@ -1,5 +1,5 @@
 use rusqlite::Connection;
-use crate::utils::rand_by_seed::LcgRng;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use crate::generators::common::{gen_stmt, DriverKind, SqlKind};
 pub mod schema;
 

@@ -17,3 +17,4 @@ rusqlite = { version = "0.30", features = ["bundled"] }  # 可根据实际情况
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 tokio = { version = "1.45.1", features = ["full"] }
+sqlsmith-rs-common = { path = "../common" }

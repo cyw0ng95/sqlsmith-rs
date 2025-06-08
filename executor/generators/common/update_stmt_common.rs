@@ -1,5 +1,5 @@
 // 通用 UPDATE 语句生成逻辑，供 limbo/sqlite 共享
-use crate::utils::rand_by_seed::LcgRng;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 
 pub trait TableColumnLike {
     fn name(&self) -> &str;
