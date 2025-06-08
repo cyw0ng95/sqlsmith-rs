@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use log::info;
-use crate::drivers::DRIVER_KIND;
+use sqlsmith_rs_drivers::DRIVER_KIND;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Profile {

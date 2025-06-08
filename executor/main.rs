@@ -1,15 +1,13 @@
 // src/main.rs
 
 // Declare the drivers module so Rust can find its content
-mod drivers;
 mod generators;
 mod engines;
-mod profile;
 
 use anyhow::Result;
 use log::info;
 use engines::Engine;
-use profile::read_profile;
+use sqlsmith_rs_common::profile::read_profile;
 
 use crate::engines::with_driver_kind;
 

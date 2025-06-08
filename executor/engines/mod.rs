@@ -1,8 +1,8 @@
 use rusqlite::Connection;
-use crate::drivers::{DatabaseDriver, DRIVER_KIND, new_conn};
+use sqlsmith_rs_drivers::{DatabaseDriver, DRIVER_KIND, new_conn};
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
-use crate::profile::Profile;
-use crate::drivers::limbo_in_mem::LimboDriver;
+use sqlsmith_rs_common::profile::Profile;
+use sqlsmith_rs_drivers::limbo_in_mem::LimboDriver;
 use crate::generators::common::SqlKind;
 
 // Define Engine trait
@@ -19,11 +19,11 @@ pub struct SqliteEngine<'a> {
     pub rng: LcgRng,
     pub sqlite_driver_box: Box<dyn DatabaseDriver<Connection = Connection> + 'a>,
     pub run_count: usize,
-    pub stmt_prob: Option<crate::profile::StmtProb>,
-    pub debug: Option<crate::profile::DebugOptions>,
+    pub stmt_prob: Option<sqlsmith_rs_common::profile::StmtProb>,
+    pub debug: Option<sqlsmith_rs_common::profile::DebugOptions>,
 }
 
-fn run_engine_loop<F>(run_count: usize, debug: &Option<crate::profile::DebugOptions>, mut gen_and_exec: F)
+fn run_engine_loop<F>(run_count: usize, debug: &Option<sqlsmith_rs_common::profile::DebugOptions>, mut gen_and_exec: F)
 where
     F: FnMut() -> anyhow::Result<(String, usize)>,
 {
@@ -49,7 +49,7 @@ where
     }
 }
 
-fn generate_sql_by_prob<F>(prob: &crate::profile::StmtProb, rng: &mut sqlsmith_rs_common::rand_by_seed::LcgRng, mut get_stmt: F) -> String
+fn generate_sql_by_prob<F>(prob: &sqlsmith_rs_common::profile::StmtProb, rng: &mut sqlsmith_rs_common::rand_by_seed::LcgRng, mut get_stmt: F) -> String
 where
     F: FnMut(SqlKind, &mut sqlsmith_rs_common::rand_by_seed::LcgRng) -> Option<String>,
 {
@@ -135,8 +135,8 @@ pub struct LimboEngine {
     pub rng: LcgRng,
     pub limbo_driver_box: Box<LimboDriver>,
     pub run_count: usize,
-    pub stmt_prob: Option<crate::profile::StmtProb>,
-    pub debug: Option<crate::profile::DebugOptions>,
+    pub stmt_prob: Option<sqlsmith_rs_common::profile::StmtProb>,
+    pub debug: Option<sqlsmith_rs_common::profile::DebugOptions>,
 }
 
 impl Engine for LimboEngine {
@@ -217,7 +217,7 @@ pub fn with_driver_kind(
         }
         DRIVER_KIND::LIMBO_IN_MEM => {
             let rt = tokio::runtime::Runtime::new()?;
-            let driver = rt.block_on(crate::drivers::limbo_in_mem::LimboDriver::new())?;
+            let driver = rt.block_on(sqlsmith_rs_drivers::limbo_in_mem::LimboDriver::new())?;
             Ok(Box::new(LimboEngine {
                 rng: LcgRng::new(seed),
                 limbo_driver_box: Box::new(driver),

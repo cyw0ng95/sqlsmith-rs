@@ -1,6 +1,7 @@
-use crate::drivers::DatabaseDriver;
+use sqlsmith_rs_drivers::DatabaseDriver;
 use crate::engines::Engine;
-use crate::{drivers::DRIVER_KIND, generators::common::SqlKind};
+use crate::generators::common::SqlKind;
+use sqlsmith_rs_drivers::DRIVER_KIND;
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 
 pub mod sqlite;

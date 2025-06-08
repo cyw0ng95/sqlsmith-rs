@@ -3,5 +3,6 @@ resolver = "3"
 members = [
     "executor",
     "server",
-    "common"
+    "common",
+    "drivers"
 ]

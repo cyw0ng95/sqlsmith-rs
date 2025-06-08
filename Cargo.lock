@@ -1500,6 +1500,21 @@ dependencies = [
  "fern",
  "humantime",
  "log",
+ "serde",
+ "serde_json",
+ "sqlsmith-rs-drivers",
+]
+
+[[package]]
+name = "sqlsmith-rs-drivers"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "limbo",
+ "log",
+ "rusqlite",
+ "serde",
+ "tokio",
 ]
 
 [[package]]
@@ -1515,6 +1530,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlsmith-rs-common",
+ "sqlsmith-rs-drivers",
  "tokio",
 ]
 
