@@ -1,6 +1,22 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import HelloWorld from './components/HelloWorld.vue'
 import TheWelcome from './components/TheWelcome.vue'
+
+const profileData = ref(null)
+const error = ref(null)
+
+onMounted(async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:8080/profile/get')
+    if (!response.ok) {
+      throw new Error('Network response was not ok')
+    }
+    profileData.value = await response.json()
+  } catch (err) {
+    error.value = err
+  }
+})
 </script>
 
 <template>
@@ -14,6 +30,12 @@ import TheWelcome from './components/TheWelcome.vue'
 
   <main>
     <TheWelcome />
+    <div v-if="profileData">
+      <pre>{{ JSON.stringify(profileData, null, 2) }}</pre>
+    </div>
+    <div v-else-if="error">
+      <p>Error: {{ error.message }}</p>
+    </div>
   </main>
 </template>
 

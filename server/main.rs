@@ -5,6 +5,7 @@ use actix_web::Responder;
 use actix_web::HttpResponse;
 use actix_web::App;
 use actix_web::web;
+use actix_cors::Cors; // Import CORS middleware
 mod fork_server;
 
 #[actix_web::main]
@@ -12,8 +13,9 @@ async fn main() -> std::io::Result<()> {
     sqlsmith_rs_common::logger::init(); // Configure logging
 
     HttpServer::new(|| {
-        App::new()
-            .route("/", web::get().to(show_profile)) // 新增路由
+        let cors = Cors::permissive();
+        App::new().wrap(cors)
+            .route("/profile/get", web::get().to(show_profile)) // 新增路由
             .route("/run", web::get().to(manual_hello))
     })
     .bind(("127.0.0.1", 8080))?
