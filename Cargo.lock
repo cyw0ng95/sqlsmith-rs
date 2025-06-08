@@ -1430,20 +1430,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "sqlsmith-rs"
+name = "sqlsmith-rs-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "crossterm 0.29.0",
  "fern",
  "humantime",
  "limbo",
  "log",
- "ratatui",
  "rusqlite",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "sqlsmith-rs-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "crossterm 0.29.0",
+ "ratatui",
 ]
 
 [[package]]

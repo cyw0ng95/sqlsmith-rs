@@ -6,7 +6,6 @@ mod utils;
 mod generators;
 mod engines;
 mod profile;
-mod tui;
 
 use anyhow::Result;
 use log::info;
@@ -28,9 +27,6 @@ fn main() -> Result<()> {
     info!("SQLite connection prepared and verified.");
 
     engine.run();
-
-    tui::tui_main()
-        .map_err(|e| anyhow::anyhow!("TUI error: {}", e))?;
 
     Ok(())
 }
