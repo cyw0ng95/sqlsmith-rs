@@ -73,7 +73,7 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
                     MODES[(rng.rand().unsigned_abs() as usize) % MODES.len()]
                 }
                 "encoding" => {
-                    const MODES: &[&str] = &["UTF-8", "UTF-16", "UTF-16le", "UTF-16be"];
+                    const MODES: &[&str] = &["\"UTF-8\"", "\"UTF-16\"", "\"UTF-16le\"", "\"UTF-16be\""];
                     MODES[(rng.rand().unsigned_abs() as usize) % MODES.len()]
                 }
                 _ => "ON",
