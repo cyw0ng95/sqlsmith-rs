@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::time::SystemTime;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -9,9 +10,12 @@ pub fn init() {
         .chain(std::io::stdout())
                 .format(|out, message, record| {
             out.finish(format_args!(
-                "[{}][{}][{}] {}",
+                "[{}][{}][{}][{}] {}",
                 humantime::format_rfc3339_seconds(SystemTime::now()),
                 record.level(),
+                std::env::args().next()
+                    .map(|p| Path::new(&p).file_name().unwrap_or_default().to_string_lossy().into_owned())
+                    .unwrap_or_else(|| "unknown".to_string()),
                 record.target().rsplit("::").next().unwrap_or(record.target()),
                 message
             ))
