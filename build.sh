@@ -1,6 +1,10 @@
 #!/bin/bash
 
-export CARGO_BUILD_JOBS=$(( $(nproc) * 2 ))
+if command -v sccache &> /dev/null
+then
+    export RUSTC_WRAPPER=sccache
+fi
+
 cargo build && \
     cargo test && \
     cargo run --bin server
