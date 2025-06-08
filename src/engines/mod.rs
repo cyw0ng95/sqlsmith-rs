@@ -2,7 +2,7 @@ use rusqlite::Connection;
 use crate::drivers::{DatabaseDriver, DRIVER_KIND, new_conn};
 use crate::utils::rand_by_seed::LcgRng;
 use crate::profile::Profile;
-use crate::drivers::limbo::LimboDriver;
+use crate::drivers::limbo_in_mem::LimboDriver;
 use crate::generators::common::SqlKind;
 
 // Define Engine trait
@@ -186,7 +186,7 @@ impl Engine for LimboEngine {
         }
     }
     fn get_driver_kind(&self) -> DRIVER_KIND {
-        DRIVER_KIND::LIMBO
+        DRIVER_KIND::LIMBO_IN_MEM
     }
     fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = Connection>> {
         None
@@ -215,9 +215,9 @@ pub fn with_driver_kind(
                 debug: profile.debug.clone(),
             }))
         }
-        DRIVER_KIND::LIMBO => {
+        DRIVER_KIND::LIMBO_IN_MEM => {
             let rt = tokio::runtime::Runtime::new()?;
-            let driver = rt.block_on(crate::drivers::limbo::LimboDriver::new())?;
+            let driver = rt.block_on(crate::drivers::limbo_in_mem::LimboDriver::new())?;
             Ok(Box::new(LimboEngine {
                 rng: LcgRng::new(seed),
                 limbo_driver_box: Box::new(driver),

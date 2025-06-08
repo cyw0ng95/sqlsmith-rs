@@ -58,7 +58,7 @@ pub fn read_profile() -> Profile {
     // DRIVER_KIND
     println!("Select driver kind: 1) SQLITE_IN_MEM  2) LIMBO");
     let driver = match prompt("Driver kind (1/2)", 1u32) {
-        2 => Some(DRIVER_KIND::LIMBO),
+        2 => Some(DRIVER_KIND::LIMBO_IN_MEM),
         _ => Some(DRIVER_KIND::SQLITE_IN_MEM),
     };
 

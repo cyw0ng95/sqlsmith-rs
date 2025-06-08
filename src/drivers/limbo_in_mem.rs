@@ -11,7 +11,7 @@ pub struct LimboDriver {
 
 impl LimboDriver {
     pub async fn new() -> Result<Self> {
-        let db = Builder::new_local("sqlite.db").build().await?;
+        let db = Builder::new_local(":memory:").build().await?;
         let conn = db.connect()?;
         let driver = Self { conn };
 
