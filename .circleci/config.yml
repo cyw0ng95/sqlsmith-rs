@@ -10,9 +10,7 @@ jobs:
       - image: cimg/rust:1.87.0
     steps:
       - checkout
-      - run: cargo --version
-      - run: cargo test
-      - run: cargo build
+      - run: ./build.sh
       - sonarcloud/scan
 
 orbs:
