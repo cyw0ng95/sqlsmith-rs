@@ -7,6 +7,7 @@ use sqlsmith_rs_drivers::DRIVER_KIND;
 pub struct Profile {
     pub driver: Option<DRIVER_KIND>,
     pub count: Option<usize>,
+    pub executor_count: Option<usize>,
     pub stmt_prob: Option<StmtProb>,
     pub debug: Option<DebugOptions>,
 }
@@ -65,6 +66,9 @@ pub fn read_profile() -> Profile {
     // count
     let count = Some(prompt("Run count", 8usize));
 
+    // executor_count
+    let executor_count = Some(prompt("Executor count", 5usize));
+
     // stmt_prob
     let select = prompt("SELECT probability", 100u64);
     let insert = prompt("INSERT probability", 50u64);
@@ -90,6 +94,7 @@ pub fn read_profile() -> Profile {
     let profile = Profile {
         driver,
         count,
+        executor_count,
         stmt_prob,
         debug,
     };
@@ -113,6 +118,10 @@ impl Profile {
         items.push(format!(
             "count={}",
             self.count.unwrap_or(8)
+        ));
+        items.push(format!(
+            "executor_count={}",
+            self.executor_count.unwrap_or(5)
         ));
         if let Some(stmt_prob) = &self.stmt_prob {
             items.push(format!("SELECT={}", stmt_prob.SELECT));
