@@ -26,6 +26,9 @@
       <el-form-item label="UPSERT Probability" prop="stmt_prob.UPSERT">
         <el-input-number v-model="profile.stmt_prob.UPSERT" :min="0"></el-input-number>
       </el-form-item>
+      <el-form-item label="DELETE Probability" prop="stmt_prob.DELETE">
+        <el-input-number v-model="profile.stmt_prob.DELETE" :min="0"></el-input-number>
+      </el-form-item>
       <el-form-item label="VACUUM Probability" prop="stmt_prob.VACUUM">
         <el-input-number v-model="profile.stmt_prob.VACUUM" :min="0"></el-input-number>
       </el-form-item>
@@ -63,6 +66,7 @@ const profile = ref({
     INSERT: 50,
     UPDATE: 50,
     UPSERT: 30,
+    DELETE: 20,
     VACUUM: 20,
     PRAGMA: 10
   },

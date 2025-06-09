@@ -21,6 +21,7 @@ pub struct DebugOptions {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]  // 添加 Clone
 pub struct StmtProb {
+    pub DELETE: u64,
     pub SELECT: u64,
     pub INSERT: u64,
     pub UPDATE: u64,
@@ -76,6 +77,7 @@ pub fn read_profile() -> Profile {
     let insert = prompt("INSERT probability", 50u64);
     let update = prompt("UPDATE probability", 50u64);
     let upsert = prompt("UPSERT probability", 30u64);
+    let delete = prompt("DELETE probability", 20u64);
     let vacuum = prompt("VACUUM probability", 20u64);
     let pragma = prompt("PRAGMA probability", 10u64);
     let stmt_prob = Some(StmtProb {
@@ -83,6 +85,7 @@ pub fn read_profile() -> Profile {
         INSERT: insert,
         UPDATE: update,
         UPSERT: upsert,
+        DELETE: delete,
         VACUUM: vacuum,
         PRAGMA: pragma,
     });
@@ -142,6 +145,7 @@ impl Profile {
             items.push(format!("INSERT={}", stmt_prob.INSERT));
             items.push(format!("UPDATE={}", stmt_prob.UPDATE));
             items.push(format!("VACUUM={}", stmt_prob.VACUUM));
+            items.push(format!("DELETE={}", stmt_prob.DELETE));
             items.push(format!("PRAGMA={}", stmt_prob.PRAGMA)); // 新增
         }
         if let Some(debug) = &self.debug {
