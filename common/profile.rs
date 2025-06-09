@@ -31,72 +31,30 @@ pub struct StmtProb {
 }
 
 pub fn read_profile() -> Profile {
-    use std::io::{self, Write};
-
     if let Ok(content) = fs::read_to_string("profile.json") {
         if let Ok(profile) = serde_json::from_str::<Profile>(&content) {
             return profile;
         }
     }
 
-    info!("profile.json not found or invalid, please input configuration interactively.");
-
-    // 交互式输入
-    fn prompt<T>(msg: &str, default: T) -> T
-    where
-        T: std::str::FromStr,
-        T::Err: std::fmt::Debug,
-        T: std::fmt::Display,
-    {
-        print!("{} [{}]: ", msg, default);
-        io::stdout().flush().ok();
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).ok();
-        let input = input.trim();
-        if input.is_empty() {
-            return default;
-        }
-        input.parse().unwrap_or(default)
-    }
-
-    // DRIVER_KIND
-    println!("Select driver kind: 1) SQLITE_IN_MEM  2) LIMBO");
-    let driver = match prompt("Driver kind (1/2)", 1u32) {
-        2 => Some(DRIVER_KIND::LIMBO_IN_MEM),
-        _ => Some(DRIVER_KIND::SQLITE_IN_MEM),
-    };
-
-    // count
-    let count = Some(prompt("Run count", 8usize));
-
-    // executor_count
-    let executor_count = Some(prompt("Executor count", 5usize));
-
-    // stmt_prob
-    let select = prompt("SELECT probability", 100u64);
-    let insert = prompt("INSERT probability", 50u64);
-    let update = prompt("UPDATE probability", 50u64);
-    let upsert = prompt("UPSERT probability", 30u64);
-    let delete = prompt("DELETE probability", 20u64);
-    let vacuum = prompt("VACUUM probability", 20u64);
-    let pragma = prompt("PRAGMA probability", 10u64);
+    // 直接使用默认值生成 Profile 结构体
+    let driver = Some(DRIVER_KIND::SQLITE_IN_MEM);
+    let count = Some(8);
+    let executor_count = Some(5);
     let stmt_prob = Some(StmtProb {
-        SELECT: select,
-        INSERT: insert,
-        UPDATE: update,
-        UPSERT: upsert,
-        DELETE: delete,
-        VACUUM: vacuum,
-        PRAGMA: pragma,
+        SELECT: 100,
+        INSERT: 50,
+        UPDATE: 50,
+        UPSERT: 30,
+        DELETE: 20,
+        VACUUM: 20,
+        PRAGMA: 10,
     });
-
-    // debug options
-    let show_success_sql = prompt("Show success SQL? (0/1)", 0u32) != 0;
-    let show_failed_sql = prompt("Show failed SQL? (0/1)", 1u32) != 0;
     let debug = Some(DebugOptions {
-        show_success_sql,
-        show_failed_sql,
+        show_success_sql: false,
+        show_failed_sql: true,
     });
+    let seed = Some(0);
 
     let profile = Profile {
         driver,
@@ -104,7 +62,7 @@ pub fn read_profile() -> Profile {
         executor_count,
         stmt_prob,
         debug,
-        seed: Some(0), // Default seed value
+        seed,
     };
 
     if let Ok(json_str) = serde_json::to_string_pretty(&profile) {
@@ -112,8 +70,8 @@ pub fn read_profile() -> Profile {
             eprintln!("Failed to write profile.json: {}", e);
         }
     }
-    info!("profile.json created, please restart the program.");
-    std::process::exit(0);
+    info!("default profile.json created");
+    profile
 }
 
 pub fn write_profile(profile: &Profile) -> Result<(), std::io::Error> {
