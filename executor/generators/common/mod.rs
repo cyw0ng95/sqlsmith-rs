@@ -24,67 +24,52 @@ pub enum DriverKind {
     Limbo,
 }
 
+// Helper function to handle driver-specific connection downcasting and stmt generation
+fn call_driver_get_stmt_by_seed(
+    driver_kind: DriverKind,
+    conn: &dyn std::any::Any,
+    rng: &mut LcgRng,
+    kind: SqlKind,
+) -> Option<String> {
+    match driver_kind {
+        DriverKind::Sqlite => {
+            if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
+                crate::generators::sqlite::get_stmt_by_seed(sqlite_conn, rng, kind)
+            } else {
+                None
+            }
+        }
+        DriverKind::Limbo => {
+            if let Some(limbo_conn) = conn.downcast_ref::<limbo::Connection>() {
+                crate::generators::limbo::get_stmt_by_seed(limbo_conn, rng, kind)
+            } else {
+                None
+            }
+        }
+    }
+}
+
 pub fn gen_stmt(
     sql_kind: SqlKind,
     driver_kind: DriverKind,
     conn: &dyn std::any::Any,
     rng: &mut LcgRng,
 ) -> Option<String> {
-    match (sql_kind, driver_kind) {
-        (SqlKind::Select, DriverKind::Sqlite) => {
-            if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::sqlite::get_stmt_by_seed(sqlite_conn, rng, SqlKind::Select)
-            } else {
-                None
+    match sql_kind {
+        SqlKind::Select => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Select),
+        SqlKind::Insert => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Insert),
+        SqlKind::Update => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Update),
+        SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
+        SqlKind::Pragma => match driver_kind {
+            DriverKind::Sqlite => {
+                if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
+                    crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(sqlite_conn, rng)
+                } else {
+                    None
+                }
             }
-        }
-        (SqlKind::Select, DriverKind::Limbo) => {
-            if let Some(limbo_conn) = conn.downcast_ref::<limbo::Connection>() {
-                crate::generators::limbo::get_stmt_by_seed(limbo_conn, rng, SqlKind::Select)
-            } else {
-                None
-            }
-        }
-        (SqlKind::Insert, DriverKind::Sqlite) => {
-            if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::sqlite::get_stmt_by_seed(sqlite_conn, rng, SqlKind::Insert)
-            } else {
-                None
-            }
-        }
-        (SqlKind::Insert, DriverKind::Limbo) => {
-            if let Some(limbo_conn) = conn.downcast_ref::<limbo::Connection>() {
-                crate::generators::limbo::get_stmt_by_seed(limbo_conn, rng, SqlKind::Insert)
-            } else {
-                None
-            }
-        }
-        (SqlKind::Update, DriverKind::Sqlite) => {
-            if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::sqlite::get_stmt_by_seed(sqlite_conn, rng, SqlKind::Update)
-            } else {
-                None
-            }
-        }
-        (SqlKind::Update, DriverKind::Limbo) => {
-            if let Some(limbo_conn) = conn.downcast_ref::<limbo::Connection>() {
-                crate::generators::limbo::get_stmt_by_seed(limbo_conn, rng, SqlKind::Update)
-            } else {
-                None
-            }
-        }
-        (SqlKind::Vacuum, _) => {
-            crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt()
-        }
-        (SqlKind::Pragma, DriverKind::Sqlite) => {
-            if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(sqlite_conn, rng)
-            } else {
-                None
-            }
-        }
-        // Limbo 不支持 PRAGMA
-        (SqlKind::Pragma, DriverKind::Limbo) => None,
+            DriverKind::Limbo => None,
+        },
         _ => None,
     }
 }
