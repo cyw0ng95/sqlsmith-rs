@@ -77,6 +77,34 @@ pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: Sql
             }
             gen_update_stmt(&wrapped_tables, seeder)
         },
+        SqlKind::Upsert => {
+            let tables_with_columns = schema::get_tables_with_columns(sqlite_conn);
+            let mut wrapped_tables = Vec::new();
+            for (name, columns) in tables_with_columns {
+                wrapped_tables.push(TableWithColumns {
+                    name,
+                    columns,
+                });
+            }
+            crate::generators::common::upsert_stmt_common::gen_upsert_stmt(&wrapped_tables, seeder)
+        },
+        SqlKind::Delete => {
+            let tables_with_columns = schema::get_tables_with_columns(sqlite_conn);
+            let mut wrapped_tables = Vec::new();
+            for (name, columns) in tables_with_columns {
+                wrapped_tables.push(TableWithColumns {
+                    name,
+                    columns,
+                });
+            }
+            crate::generators::common::delete_stmt_common::gen_delete_stmt(&wrapped_tables, seeder)
+        },
+        SqlKind::Vacuum => {
+            crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt()
+        },
+        SqlKind::Pragma => {
+            crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(sqlite_conn, seeder)
+        },
         _ => gen_stmt(kind, DriverKind::Sqlite, sqlite_conn, seeder)
     }
 }
