@@ -19,9 +19,13 @@ fn main() -> Result<()> {
     let run_count = profile.count.expect("run count must be an unsigned number");
     profile.print();
 
-    // 修改：直接调用 with_driver_kind 函数
-    info!("init executor engine with seed: {:?}", profile.seed.unwrap());
-    let mut engine = with_driver_kind(0, driver_kind, run_count, &profile)?;
+    // Get seed from environment variable or fallback to profile seed
+    let seed = std::env::var("EXEC_PARAM_SEED")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or_else(|| profile.seed.unwrap_or(0));
+    info!("init executor engine with seed: {:?}, base seed: {:?}", seed, profile.seed.unwrap());
+    let mut engine = with_driver_kind(seed, driver_kind, run_count, &profile)?;
     info!("SQLite connection prepared and verified.");
 
     engine.run();

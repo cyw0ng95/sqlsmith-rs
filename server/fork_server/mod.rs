@@ -20,6 +20,7 @@ fn can_execute(path: &str) -> bool {
 /// fork_server 的主函数，用于生成多个进程
 pub fn fork_server_main(profile: &Profile) {
     let executor_count = profile.executor_count.unwrap();
+    let base_seed = profile.seed.unwrap_or(0);
     println!("Using executor count: {}", executor_count);
 
     let executor_path = match get_executor_path() {
@@ -34,8 +35,10 @@ pub fn fork_server_main(profile: &Profile) {
     for n in 0..executor_count {
         let path = executor_path.clone();
         let process_name = format!("exec_{}", n);
+        let seed = base_seed + n as u64;
         let handle = thread::spawn(move || {
             let mut cmd = Command::new(&path);
+            cmd.env("EXEC_PARAM_SEED", seed.to_string());
             #[cfg(unix)]
             {
                 use std::os::unix::process::CommandExt;
