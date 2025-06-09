@@ -2,6 +2,7 @@
 pub mod select_stmt_common;
 pub mod update_stmt_common;
 pub mod insert_stmt_common;
+pub mod upsert_stmt_common;
 pub mod vacuum_stmt_common;
 pub mod pragma_stmt_common;
 
@@ -11,10 +12,10 @@ pub enum SqlKind {
     Select,
     Insert,
     Update,
+    Upsert,
     Delete,
     Vacuum,
-    Pragma, // 某些数据库特有，可选
-    // ...如有需要可扩展
+    Pragma,
 }
 
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
@@ -59,6 +60,7 @@ pub fn gen_stmt(
         SqlKind::Select => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Select),
         SqlKind::Insert => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Insert),
         SqlKind::Update => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Update),
+        SqlKind::Upsert => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Upsert),
         SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => match driver_kind {
             DriverKind::Sqlite => {
