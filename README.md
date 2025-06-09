@@ -2,9 +2,20 @@
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/cyw0ng95/sqlsmith-rs/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/cyw0ng95/sqlsmith-rs/tree/main)
 
-`sqlsmith-rs` is a SQL testing tool written in Rust. It can generate and execute random SQL statements, with support for SQLite in-memory databases and Limbo databases. The current version of the project is v0.1.2.
+`sqlsmith-rs` is a SQL testing tool written in Rust. It can generate and execute random SQL statements, with support for SQLite in-memory databases and Limbo databases. The current version of the project is v0.2.0.
 
 ## Version Information
+
+### v0.2.0
+- **New Features**:
+  - **Web UI**: Added a web UI for better user interaction and configuration.
+  - **DELETE Statement Support**: Added random DELETE statement generation with WHERE clause construction.
+  - **BLOB Value Generation**: Implemented random BLOB value generation using hexadecimal format (X'...').
+  - **Negative Value Support**: Enhanced numeric type generation to include negative values for better testing of SQL functions like `abs()`.
+- **Improvements**:
+  - **Unified Data Type Handling**: Moved type-specific value generation logic to `data_type.rs` for better code reuse across statement generators.
+  - **Probability Configuration**: Updated SQL type probability calculation to include all statement types (SELECT, INSERT, UPDATE, DELETE, VACUUM, PRAGMA).
+  - **Error Reporting**: Improved error message details for database execution failures, including specific SQLite error codes and messages.
 
 ### v0.1.3
 
