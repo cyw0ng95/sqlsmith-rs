@@ -10,6 +10,7 @@ pub struct Profile {
     pub executor_count: Option<usize>,
     pub stmt_prob: Option<StmtProb>,
     pub debug: Option<DebugOptions>,
+    pub seed: Option<u64>, // Added seed field
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]  // 添加 Clone
@@ -97,6 +98,7 @@ pub fn read_profile() -> Profile {
         executor_count,
         stmt_prob,
         debug,
+        seed: Some(0), // Default seed value
     };
 
     if let Ok(json_str) = serde_json::to_string_pretty(&profile) {
@@ -129,6 +131,9 @@ impl Profile {
             "executor_count={}",
             self.executor_count.unwrap_or(5)
         ));
+        if let Some(seed) = self.seed {
+            items.push(format!("seed={}", seed)); // Added seed to print
+        }
         if let Some(stmt_prob) = &self.stmt_prob {
             items.push(format!("SELECT={}", stmt_prob.SELECT));
             items.push(format!("INSERT={}", stmt_prob.INSERT));

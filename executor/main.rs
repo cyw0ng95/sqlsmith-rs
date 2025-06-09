@@ -20,6 +20,7 @@ fn main() -> Result<()> {
     profile.print();
 
     // 修改：直接调用 with_driver_kind 函数
+    info!("init executor engine with seed: {:?}", profile.seed.unwrap());
     let mut engine = with_driver_kind(0, driver_kind, run_count, &profile)?;
     info!("SQLite connection prepared and verified.");
 

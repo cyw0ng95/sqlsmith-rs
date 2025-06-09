@@ -35,6 +35,9 @@
       <el-form-item label="Show Failed SQL" prop="debug.show_failed_sql">
         <el-switch v-model="profile.debug.show_failed_sql"></el-switch>
       </el-form-item>
+      <el-form-item label="Seed" prop="seed">
+        <el-input-number v-model="profile.seed" :min="0"></el-input-number>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="updateProfile">Update Profile</el-button>
         <!-- 新增运行按钮 -->
@@ -62,7 +65,8 @@ const profile = ref({
   debug: {
     show_success_sql: false,
     show_failed_sql: true
-  }
+  },
+  seed: 0  // Added seed field with default value 0
 });
 
 const profileForm = ref(null);
@@ -78,6 +82,10 @@ const rules = {
   executor_count: [
     { required: true, message: 'Please enter the executor count', trigger: 'blur' },
     { type: 'number', min: 1, message: 'Executor count must be at least 1', trigger: 'blur' }
+  ],
+  seed: [
+    { required: true, message: 'Please enter a seed value', trigger: 'blur' },
+    { type: 'number', min: 0, message: 'Seed must be a positive number', trigger: 'blur' }
   ]
 };
 
