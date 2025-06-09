@@ -1,5 +1,6 @@
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use crate::generators::common::insert_stmt_common::TableColumnLike;
+use crate::generators::common::data_type::generate_value_by_type;
 
 pub fn gen_upsert_stmt<T: TableColumnLike>(tables: &[T], rng: &mut LcgRng) -> Option<String> {
     if tables.is_empty() {
@@ -28,13 +29,7 @@ pub fn gen_upsert_stmt<T: TableColumnLike>(tables: &[T], rng: &mut LcgRng) -> Op
     let update_clause: Vec<String> = selected_cols
         .iter()
         .map(|(name, ty)| {
-            let value = match ty.to_uppercase().as_str() {
-                "INTEGER" => (rng.rand().abs() % 1000).to_string(),
-                "REAL" => format!("{}", (rng.rand().abs() as f64) / 100.0),
-                "TEXT" => format!("'val{}'", rng.rand().abs() % 1000),
-                "BLOB" => "'blob'".to_string(),
-                _ => "NULL".to_string(),
-            };
+            let value = generate_value_by_type(ty, rng);
             format!("{} = {}", name, value)
         })
         .collect();
@@ -43,13 +38,7 @@ pub fn gen_upsert_stmt<T: TableColumnLike>(tables: &[T], rng: &mut LcgRng) -> Op
         "INSERT INTO {} ({}) VALUES ({}) ON CONFLICT({}) DO UPDATE SET {};",
         table.name(),
         selected_cols.iter().map(|(n, _)| n.as_str()).collect::<Vec<_>>().join(", "),
-        selected_cols.iter().map(|(_, t)| match t.to_uppercase().as_str() {
-            "INTEGER" => (rng.rand().abs() % 1000).to_string(),
-            "REAL" => format!("{}", (rng.rand().abs() as f64) / 100.0),
-            "TEXT" => format!("'val{}'", rng.rand().abs() % 1000),
-            "BLOB" => "'blob'".to_string(),
-            _ => "NULL".to_string(),
-        }).collect::<Vec<_>>().join(", "),
+        selected_cols.iter().map(|(_, t)| generate_value_by_type(t, rng)).collect::<Vec<_>>().join(", "),
         conflict_target,
         update_clause.join(", ")
     ))
