@@ -77,17 +77,6 @@ pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: Sql
             }
             gen_update_stmt(&wrapped_tables, seeder)
         },
-        SqlKind::Upsert => {
-            let tables_with_columns = schema::get_tables_with_columns(sqlite_conn);
-            let mut wrapped_tables = Vec::new();
-            for (name, columns) in tables_with_columns {
-                wrapped_tables.push(TableWithColumns {
-                    name,
-                    columns,
-                });
-            }
-            crate::generators::common::upsert_stmt_common::gen_upsert_stmt(&wrapped_tables, seeder)
-        },
         SqlKind::Delete => {
             let tables_with_columns = schema::get_tables_with_columns(sqlite_conn);
             let mut wrapped_tables = Vec::new();

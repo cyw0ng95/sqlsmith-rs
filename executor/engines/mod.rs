@@ -55,7 +55,8 @@ fn generate_sql_by_prob<F>(prob: &sqlsmith_rs_common::profile::StmtProb, rng: &m
 where
     F: FnMut(SqlKind, &mut sqlsmith_rs_common::rand_by_seed::LcgRng) -> Option<String>,
 {
-    let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM + prob.PRAGMA;
+    // 移除 prob.UPSERT
+    let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA;
     if total == 0 {
         return "SELECT 1;".to_string();
     }
@@ -66,7 +67,10 @@ where
         get_stmt(SqlKind::Insert, rng)
     } else if r < prob.SELECT + prob.INSERT + prob.UPDATE {
         get_stmt(SqlKind::Update, rng)
-    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.VACUUM {
+    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE {
+        get_stmt(SqlKind::Delete, rng)
+    } 
+    else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM {
         get_stmt(SqlKind::Vacuum, rng)
     } else {
         get_stmt(SqlKind::Pragma, rng)

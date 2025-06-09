@@ -47,9 +47,6 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
         SqlKind::Select => gen_select_stmt(&tables, seeder),
         SqlKind::Insert => gen_insert_stmt(&tables, seeder),
         SqlKind::Update => gen_update_stmt(&tables, seeder),
-        SqlKind::Upsert => {
-            crate::generators::common::upsert_stmt_common::gen_upsert_stmt(&tables, seeder)
-        },
         SqlKind::Delete => {
             crate::generators::common::delete_stmt_common::gen_delete_stmt(&tables, seeder)
         },

@@ -2,7 +2,6 @@
 pub mod select_stmt_common;
 pub mod update_stmt_common;
 pub mod insert_stmt_common;
-pub mod upsert_stmt_common;
 pub mod delete_stmt_common;
 pub mod vacuum_stmt_common;
 pub mod pragma_stmt_common;
@@ -14,7 +13,6 @@ pub enum SqlKind {
     Select,
     Insert,
     Update,
-    Upsert,
     Delete,
     Vacuum,
     Pragma,
@@ -62,7 +60,6 @@ pub fn gen_stmt(
         SqlKind::Select => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Select),
         SqlKind::Insert => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Insert),
         SqlKind::Update => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Update),
-        SqlKind::Upsert => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Upsert),
         SqlKind::Delete => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Delete),
         SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => match driver_kind {

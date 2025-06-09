@@ -25,7 +25,6 @@ pub struct StmtProb {
     pub SELECT: u64,
     pub INSERT: u64,
     pub UPDATE: u64,
-    pub UPSERT: u64,
     pub VACUUM: u64,
     pub PRAGMA: u64,
 }
@@ -45,7 +44,6 @@ pub fn read_profile() -> Profile {
         SELECT: 100,
         INSERT: 50,
         UPDATE: 50,
-        UPSERT: 30,
         DELETE: 20,
         VACUUM: 20,
         PRAGMA: 10,
