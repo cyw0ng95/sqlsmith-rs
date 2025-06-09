@@ -87,6 +87,10 @@ impl<'a> Engine for SqliteEngine<'a> {
         let failed_expected_count = std::sync::atomic::AtomicUsize::new(0);
         let failed_new_count = std::sync::atomic::AtomicUsize::new(0);
 
+        let start_time = std::time::Instant::now();
+        let mut last_print_time = start_time;
+        let mut stmt_count = 0;
+
         for _ in 0..run_count {
             let conn = self.sqlite_driver_box.get_connection_mut();
             let sql = if let Some(prob) = prob {
@@ -127,6 +131,14 @@ impl<'a> Engine for SqliteEngine<'a> {
                         }
                     }
                 }
+            }
+            stmt_count += 1;
+            let elapsed = last_print_time.elapsed();
+            if elapsed.as_secs() >= 1 {
+                let speed = stmt_count as f64 / elapsed.as_secs_f64();
+                log::info!("exec speed: {:.2} stmts/sec", speed);
+                stmt_count = 0;
+                last_print_time = std::time::Instant::now();
             }
         }
 
