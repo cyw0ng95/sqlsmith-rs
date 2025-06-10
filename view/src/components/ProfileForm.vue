@@ -126,6 +126,8 @@ const updateProfile = async () => {
 
 const runAction = async () => {
   try {
+    // Add this line to update the profile first
+    await updateProfile();
     await runRequest();
     console.log('Run request executed successfully');
   } catch (error) {
