@@ -64,51 +64,40 @@ fn run_engine_loop<F>(
 
 fn generate_sql_by_prob<F>(
     prob: &sqlsmith_rs_common::profile::StmtProb,
-    rng: &mut sqlsmith_rs_common::rand_by_seed::LcgRng,
+    rng: &mut LcgRng,
     mut get_stmt: F,
 ) -> String
 where
-    F: FnMut(SqlKind, &mut sqlsmith_rs_common::rand_by_seed::LcgRng) -> Option<String>,
+    F: FnMut(SqlKind, &mut LcgRng) -> Option<String>,
 {
-    // Add CreateTrigger to the total
-    let total = prob.SELECT
-        + prob.INSERT
-        + prob.UPDATE
-        + prob.DELETE
-        + prob.VACUUM
-        + prob.PRAGMA
-        + prob.CREATE_TRIGGER
-        + prob.DROP_TRIGGER;
+    let thresholds = [
+        (prob.SELECT, SqlKind::Select),
+        (prob.INSERT, SqlKind::Insert),
+        (prob.UPDATE, SqlKind::Update),
+        (prob.DELETE, SqlKind::Delete),
+        (prob.VACUUM, SqlKind::Vacuum),
+        (prob.PRAGMA, SqlKind::Pragma),
+        (prob.CREATE_TRIGGER, SqlKind::CreateTrigger),
+        (prob.DROP_TRIGGER, SqlKind::DropTrigger),
+    ];
+
+    let total: u64 = thresholds.iter().map(|(p, _)| p).sum();
     if total == 0 {
         return "SELECT 1;".to_string();
     }
+
     let r = (rng.rand().abs() as u64) % total;
-    if r < prob.SELECT {
-        get_stmt(SqlKind::Select, rng)
-    } else if r < prob.SELECT + prob.INSERT {
-        get_stmt(SqlKind::Insert, rng)
-    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE {
-        get_stmt(SqlKind::Update, rng)
-    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE {
-        get_stmt(SqlKind::Delete, rng)
-    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM {
-        get_stmt(SqlKind::Vacuum, rng)
-    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA
-    {
-        get_stmt(SqlKind::Pragma, rng)
-    } else if r < prob.SELECT
-        + prob.INSERT
-        + prob.UPDATE
-        + prob.DELETE
-        + prob.VACUUM
-        + prob.PRAGMA
-        + prob.CREATE_TRIGGER
-    {
-        get_stmt(SqlKind::CreateTrigger, rng)
-    } else {
-        get_stmt(SqlKind::DropTrigger, rng)
+    let mut accum = 0;
+
+    for (prob, kind) in thresholds {
+        accum += prob;
+        if r < accum {
+            // 由于 SqlKind 不能被解引用，直接传递 kind 即可
+            return get_stmt(kind, rng).unwrap_or_else(|| "SELECT 1;".to_string());
+        }
     }
-    .unwrap_or_else(|| "SELECT 1;".to_string())
+
+    "SELECT 1;".to_string()
 }
 
 impl<'a> Engine for SqliteEngine<'a> {
