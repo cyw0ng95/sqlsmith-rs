@@ -55,8 +55,8 @@ fn generate_sql_by_prob<F>(prob: &sqlsmith_rs_common::profile::StmtProb, rng: &m
 where
     F: FnMut(SqlKind, &mut sqlsmith_rs_common::rand_by_seed::LcgRng) -> Option<String>,
 {
-    // 移除 prob.UPSERT
-    let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA;
+    // Add CreateTrigger to the total
+    let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA + prob.CREATE_TRIGGER;
     if total == 0 {
         return "SELECT 1;".to_string();
     }
@@ -69,11 +69,12 @@ where
         get_stmt(SqlKind::Update, rng)
     } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE {
         get_stmt(SqlKind::Delete, rng)
-    } 
-    else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM {
+    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM {
         get_stmt(SqlKind::Vacuum, rng)
-    } else {
+    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA {
         get_stmt(SqlKind::Pragma, rng)
+    } else {
+        get_stmt(SqlKind::CreateTrigger, rng)
     }
     .unwrap_or_else(|| "SELECT 1;".to_string())
 }

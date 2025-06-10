@@ -46,6 +46,25 @@ impl UpdateTableColumnLike for UpdateTableWithColumns {
     }
 }
 
+// Add new struct implementing TriggerTableLike trait from common module
+struct TriggerTableWithColumns {
+    name: String,
+    columns: Vec<(String, String)>,
+    has_primary_key: bool,
+}
+
+impl crate::generators::common::create_trigger_stmt_common::TriggerTableLike for TriggerTableWithColumns {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn columns(&self) -> Vec<(String, String)> {
+        self.columns.clone()
+    }
+    fn has_primary_key(&self) -> bool {
+        self.has_primary_key
+    }
+}
+
 pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -> Option<String> {
     match kind {
         SqlKind::Select => {
@@ -93,6 +112,20 @@ pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: Sql
         },
         SqlKind::Pragma => {
             crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(sqlite_conn, seeder)
+        },
+        SqlKind::CreateTrigger => {
+            let tables_with_columns = schema::get_tables_with_columns(sqlite_conn);
+            let mut wrapped_tables = Vec::new();
+            for (name, columns) in tables_with_columns {
+                // Assume we check primary key existence via schema (simplified example)
+                let has_primary_key = columns.iter().any(|(col, _)| col == "id"); // Adjust based on actual schema logic
+                wrapped_tables.push(TriggerTableWithColumns {
+                    name,
+                    columns,
+                    has_primary_key,
+                });
+            }
+            crate::generators::common::create_trigger_stmt_common::gen_create_trigger_stmt(&wrapped_tables, seeder)
         },
         _ => gen_stmt(kind, DriverKind::Sqlite, sqlite_conn, seeder)
     }

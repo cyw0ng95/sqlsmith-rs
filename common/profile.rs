@@ -27,6 +27,7 @@ pub struct StmtProb {
     pub UPDATE: u64,
     pub VACUUM: u64,
     pub PRAGMA: u64,
+    pub CREATE_TRIGGER: u64, // 新增 CreateTrigger 字段
 }
 
 pub fn read_profile() -> Profile {
@@ -47,6 +48,7 @@ pub fn read_profile() -> Profile {
         DELETE: 20,
         VACUUM: 20,
         PRAGMA: 10,
+        CREATE_TRIGGER: 10, // 新增 CreateTrigger 默认值
     });
     let debug = Some(DebugOptions {
         show_success_sql: false,
@@ -103,6 +105,7 @@ impl Profile {
             items.push(format!("VACUUM={}", stmt_prob.VACUUM));
             items.push(format!("DELETE={}", stmt_prob.DELETE));
             items.push(format!("PRAGMA={}", stmt_prob.PRAGMA)); // 新增
+            items.push(format!("CREATE_TRIGGER={}", stmt_prob.CREATE_TRIGGER)); // 新增
         }
         if let Some(debug) = &self.debug {
             items.push(format!("show_success_sql={}", debug.show_success_sql));
