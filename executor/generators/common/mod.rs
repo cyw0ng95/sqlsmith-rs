@@ -8,7 +8,7 @@ pub mod pragma_stmt_common;
 pub mod data_type;
 
 // 通用 SQL 语句类型定义，供 limbo 和 sqlite 共享
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum SqlKind {
     Select,
     Insert,

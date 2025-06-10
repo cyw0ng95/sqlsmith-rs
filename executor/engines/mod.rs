@@ -90,6 +90,7 @@ impl<'a> Engine for SqliteEngine<'a> {
         let success_count = std::sync::atomic::AtomicUsize::new(0);
         let failed_expected_count = std::sync::atomic::AtomicUsize::new(0);
         let failed_new_count = std::sync::atomic::AtomicUsize::new(0);
+        let mut stmt_type_counts = std::collections::HashMap::new(); // Track statement type counts
 
         let start_time = std::time::Instant::now();
         let mut last_print_time = start_time;
@@ -99,6 +100,7 @@ impl<'a> Engine for SqliteEngine<'a> {
             let conn = self.sqlite_driver_box.get_connection_mut();
             let sql = if let Some(prob) = prob {
                 generate_sql_by_prob(prob, rng, |kind, rng| {
+                    *stmt_type_counts.entry(kind.clone()).or_insert(0) += 1; // Increment count for this statement type
                     crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
                 })
             } else {
@@ -147,6 +149,7 @@ impl<'a> Engine for SqliteEngine<'a> {
         }
 
         info!("finish exec, success/failed_exp/failed_new: {:?}/{:?}/{:?}", success_count, failed_expected_count, failed_new_count);
+        info!("Statement type statistics: {:?}", stmt_type_counts); // New log for statement types
     }
 
     fn generate_sql(&mut self) -> String {
