@@ -1,3 +1,3 @@
 pub mod logger;
-pub mod rand_by_seed;
 pub mod profile;
+pub mod rand_by_seed;

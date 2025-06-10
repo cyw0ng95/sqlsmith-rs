@@ -17,16 +17,16 @@ impl SqliteDriver {
     pub fn new() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
         let driver = Self { conn };
-        
+
         // 初始化数据库
         info!("Initializing SQLite in-memory database...");
         driver.init()?;
-        
+
         // 验证初始化结果
         if !driver.verify()? {
             anyhow::bail!("SQLite verify failed after init.");
         }
-        
+
         Ok(driver)
     }
 
@@ -36,7 +36,8 @@ impl SqliteDriver {
         let sql_content = fs::read_to_string(sql_file_path)
             .map_err(|e| anyhow::anyhow!("Failed to read SQL file: {:?}: {}", sql_file_path, e))?;
 
-        self.conn.execute_batch(&sql_content)
+        self.conn
+            .execute_batch(&sql_content)
             .map_err(|e| anyhow::anyhow!("Failed to execute SQLite init SQL batch: {}", e))?;
         info!("(SQLite) TPC-C tables created successfully.");
         Ok(())
@@ -46,7 +47,7 @@ impl SqliteDriver {
         let count: i32 = self.conn.query_row(
             "SELECT count(*) FROM warehouse",
             rusqlite::params![],
-            |row| row.get(0)
+            |row| row.get(0),
         )?;
         if count != 0 {
             return Ok(false);
@@ -59,19 +60,21 @@ impl SqliteDriver {
         let (count, name): (i32, String) = self.conn.query_row(
             "SELECT count(*), w_name FROM warehouse",
             rusqlite::params![],
-            |row| Ok((row.get(0)?, row.get(1)?))
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )?;
         if count != 1 || name != "test" {
-            self.conn.execute("DELETE FROM warehouse WHERE w_id=1", rusqlite::params![])?;
+            self.conn
+                .execute("DELETE FROM warehouse WHERE w_id=1", rusqlite::params![])?;
             return Ok(false);
         }
 
-        self.conn.execute("DELETE FROM warehouse WHERE w_id=1", rusqlite::params![])?;
+        self.conn
+            .execute("DELETE FROM warehouse WHERE w_id=1", rusqlite::params![])?;
 
         let count: i32 = self.conn.query_row(
             "SELECT count(*) FROM warehouse",
             rusqlite::params![],
-            |row| row.get(0)
+            |row| row.get(0),
         )?;
         Ok(count == 0)
     }

@@ -1,6 +1,6 @@
 // 通用 UPDATE 语句生成逻辑，供 limbo/sqlite 共享
-use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use crate::generators::common::data_type::generate_value_by_type;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 
 pub trait TableColumnLike {
     fn name(&self) -> &str;

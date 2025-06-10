@@ -12,7 +12,10 @@ pub fn generate_value_by_type(ty: &str, rng: &mut LcgRng) -> String {
             for _ in 0..len {
                 blob.push((rng.rand().unsigned_abs() % 256) as u8);
             }
-            let hex_str = blob.iter().map(|b| format!("{:02x}", b)).collect::<String>();
+            let hex_str = blob
+                .iter()
+                .map(|b| format!("{:02x}", b))
+                .collect::<String>();
             format!("X'{}'", hex_str)
         }
         _ => "NULL".to_string(),

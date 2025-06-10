@@ -1,13 +1,13 @@
 // 仅用于公开 common 子模块
+pub mod create_trigger_stmt_common;
+pub mod data_type;
+pub mod delete_stmt_common;
+pub mod drop_trigger_stmt_common; // New module declaration
+pub mod insert_stmt_common;
+pub mod pragma_stmt_common;
 pub mod select_stmt_common;
 pub mod update_stmt_common;
-pub mod insert_stmt_common;
-pub mod delete_stmt_common;
 pub mod vacuum_stmt_common;
-pub mod pragma_stmt_common;
-pub mod create_trigger_stmt_common;
-pub mod drop_trigger_stmt_common; // New module declaration
-pub mod data_type;
 
 // 通用 SQL 语句类型定义，供 limbo 和 sqlite 共享
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -19,7 +19,7 @@ pub enum SqlKind {
     Vacuum,
     Pragma,
     CreateTrigger,
-    DropTrigger
+    DropTrigger,
 }
 
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
@@ -65,13 +65,20 @@ pub fn gen_stmt(
         SqlKind::Insert => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Insert),
         SqlKind::Update => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Update),
         SqlKind::Delete => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Delete),
-        SqlKind::CreateTrigger => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::CreateTrigger),
-        SqlKind::DropTrigger => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::DropTrigger),
+        SqlKind::CreateTrigger => {
+            call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::CreateTrigger)
+        }
+        SqlKind::DropTrigger => {
+            call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::DropTrigger)
+        }
         SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => match driver_kind {
             DriverKind::Sqlite => {
                 if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
-                    crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(sqlite_conn, rng)
+                    crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(
+                        sqlite_conn,
+                        rng,
+                    )
                 } else {
                     None
                 }

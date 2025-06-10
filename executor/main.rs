@@ -1,12 +1,12 @@
 // src/main.rs
 
 // Declare the drivers module so Rust can find its content
-mod generators;
 mod engines;
+mod generators;
 
 use anyhow::Result;
-use log::info;
 use engines::Engine;
+use log::info;
 use sqlsmith_rs_common::profile::read_profile;
 
 use crate::engines::with_driver_kind;
@@ -24,7 +24,11 @@ fn main() -> Result<()> {
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or_else(|| profile.seed.unwrap_or(0));
-    info!("init executor engine with seed: {:?}, base seed: {:?}", seed, profile.seed.unwrap());
+    info!(
+        "init executor engine with seed: {:?}, base seed: {:?}",
+        seed,
+        profile.seed.unwrap()
+    );
     let mut engine = with_driver_kind(seed, driver_kind, run_count, &profile)?;
     info!("SQLite connection prepared and verified.");
 

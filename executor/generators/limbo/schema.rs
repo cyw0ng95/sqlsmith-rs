@@ -9,7 +9,8 @@ pub struct Table {
 
 /// 获取所有表及其列
 pub async fn get_tables(conn: &Connection) -> Result<Vec<Table>, Box<dyn std::error::Error>> {
-    let sql: &'static str = "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%';";
+    let sql: &'static str =
+        "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%';";
     let mut tables = Vec::new();
 
     let mut rows = conn.query(sql, ()).await.unwrap();
@@ -26,7 +27,10 @@ pub async fn get_tables(conn: &Connection) -> Result<Vec<Table>, Box<dyn std::er
 }
 
 /// 获取指定表的所有列名
-pub async fn get_columns(conn: &Connection, table_name: &str) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+pub async fn get_columns(
+    conn: &Connection,
+    table_name: &str,
+) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
     let sql = format!("PRAGMA table_info({});", table_name);
     let mut columns = Vec::new();
 

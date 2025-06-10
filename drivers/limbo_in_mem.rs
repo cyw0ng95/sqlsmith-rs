@@ -1,6 +1,6 @@
+use super::DatabaseDriver;
 use anyhow::Result;
 use limbo::{Builder, Connection};
-use super::DatabaseDriver;
 use log::info;
 use std::fs;
 use std::path::Path;
@@ -30,7 +30,9 @@ impl LimboDriver {
         let sql_content = fs::read_to_string(sql_file_path)
             .map_err(|e| anyhow::anyhow!("Failed to read SQL file: {:?}: {}", sql_file_path, e))?;
 
-        self.conn.execute(&sql_content, ()).await
+        self.conn
+            .execute(&sql_content, ())
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to execute Limbo init SQL batch: {}", e))?;
         info!("(Limbo) TPC-C tables created successfully.");
         Ok(())

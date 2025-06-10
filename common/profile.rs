@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
 use log::info;
+use serde::{Deserialize, Serialize};
 use sqlsmith_rs_drivers::DRIVER_KIND;
+use std::fs;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Profile {
@@ -13,13 +13,13 @@ pub struct Profile {
     pub seed: Option<u64>, // Added seed field
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]  // 添加 Clone
+#[derive(Serialize, Deserialize, Debug, Clone)] // 添加 Clone
 pub struct DebugOptions {
     pub show_success_sql: bool,
     pub show_failed_sql: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]  // 添加 Clone
+#[derive(Serialize, Deserialize, Debug, Clone)] // 添加 Clone
 pub struct StmtProb {
     pub DELETE: u64,
     pub SELECT: u64,
@@ -77,7 +77,8 @@ pub fn read_profile() -> Profile {
 }
 
 pub fn write_profile(profile: &Profile) -> Result<(), std::io::Error> {
-    let json_str = serde_json::to_string_pretty(profile).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    let json_str = serde_json::to_string_pretty(profile)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
     fs::write("profile.json", json_str)?;
     Ok(())
 }
@@ -89,10 +90,7 @@ impl Profile {
             "driver={:?}",
             self.driver.unwrap_or(DRIVER_KIND::SQLITE_IN_MEM)
         ));
-        items.push(format!(
-            "count={}",
-            self.count.unwrap_or(8)
-        ));
+        items.push(format!("count={}", self.count.unwrap_or(8)));
         items.push(format!(
             "executor_count={}",
             self.executor_count.unwrap_or(5)

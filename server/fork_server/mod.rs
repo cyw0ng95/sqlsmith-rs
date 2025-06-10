@@ -1,7 +1,7 @@
+use sqlsmith_rs_common::profile::Profile;
 use std::env;
 use std::path::Path;
 use std::process::{Command, exit};
-use sqlsmith_rs_common::profile::Profile;
 use std::thread;
 
 fn get_executor_path() -> Option<String> {
@@ -13,8 +13,7 @@ fn get_executor_path() -> Option<String> {
 }
 
 fn can_execute(path: &str) -> bool {
-    Path::new(path).exists() && 
-    Command::new(path).arg("--version").output().is_ok()
+    Path::new(path).exists() && Command::new(path).arg("--version").output().is_ok()
 }
 
 /// fork_server 的主函数，用于生成多个进程
@@ -49,7 +48,7 @@ pub fn fork_server_main(profile: &Profile) {
                     if let Err(e) = child.wait() {
                         eprintln!("Executor failed: {}", e);
                     }
-                },
+                }
                 Err(e) => {
                     eprintln!("Failed to execute {}: {}", path, e);
                     exit(1);

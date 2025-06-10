@@ -2,10 +2,12 @@ use limbo::Connection;
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 pub mod schema;
 
-use crate::generators::common::{gen_stmt, DriverKind, SqlKind};
-use crate::generators::common::select_stmt_common::{gen_select_stmt, TableLike};
-use crate::generators::common::insert_stmt_common::{gen_insert_stmt, TableColumnLike};
-use crate::generators::common::update_stmt_common::{gen_update_stmt, TableColumnLike as UpdateTableColumnLike};
+use crate::generators::common::insert_stmt_common::{TableColumnLike, gen_insert_stmt};
+use crate::generators::common::select_stmt_common::{TableLike, gen_select_stmt};
+use crate::generators::common::update_stmt_common::{
+    TableColumnLike as UpdateTableColumnLike, gen_update_stmt,
+};
+use crate::generators::common::{DriverKind, SqlKind, gen_stmt};
 
 impl TableLike for schema::Table {
     fn name(&self) -> &str {
@@ -49,15 +51,13 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
         SqlKind::Update => gen_update_stmt(&tables, seeder),
         SqlKind::Delete => {
             crate::generators::common::delete_stmt_common::gen_delete_stmt(&tables, seeder)
-        },
-        SqlKind::Vacuum => {
-            crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt()
-        },
+        }
+        SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => {
             // Limbo 目前对 Pragma 无处理，可保持 None 或后续添加实现
             None
-        },
-        _ => gen_stmt(kind, DriverKind::Limbo, conn, seeder)
+        }
+        _ => gen_stmt(kind, DriverKind::Limbo, conn, seeder),
     }
 }
 

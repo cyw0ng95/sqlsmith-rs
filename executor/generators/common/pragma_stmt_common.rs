@@ -1,5 +1,5 @@
-use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use rusqlite::Connection;
+use sqlsmith_rs_common::rand_by_seed::LcgRng;
 
 enum PragmaKind {
     NoArg(&'static str),
@@ -47,7 +47,11 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
     let sql = match pragma {
         NoArg(name) => format!("PRAGMA {};", name),
         BoolArg(name) => {
-            let val = if rng.rand().abs() % 2 == 0 { "ON" } else { "OFF" };
+            let val = if rng.rand().abs() % 2 == 0 {
+                "ON"
+            } else {
+                "OFF"
+            };
             format!("PRAGMA {} = {};", name, val)
         }
         IntArg(name, min, max) => {
@@ -57,7 +61,8 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
         StringArg(name) => {
             let val = match *name {
                 "journal_mode" => {
-                    const MODES: &[&str] = &["DELETE", "TRUNCATE", "PERSIST", "MEMORY", "WAL", "OFF"];
+                    const MODES: &[&str] =
+                        &["DELETE", "TRUNCATE", "PERSIST", "MEMORY", "WAL", "OFF"];
                     MODES[(rng.rand().unsigned_abs() as usize) % MODES.len()]
                 }
                 "locking_mode" => {
@@ -73,7 +78,8 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
                     MODES[(rng.rand().unsigned_abs() as usize) % MODES.len()]
                 }
                 "encoding" => {
-                    const MODES: &[&str] = &["\"UTF-8\"", "\"UTF-16\"", "\"UTF-16le\"", "\"UTF-16be\""];
+                    const MODES: &[&str] =
+                        &["\"UTF-8\"", "\"UTF-16\"", "\"UTF-16le\"", "\"UTF-16be\""];
                     MODES[(rng.rand().unsigned_abs() as usize) % MODES.len()]
                 }
                 _ => "ON",

@@ -9,9 +9,7 @@ impl LcgRng {
 
     pub fn rand(&mut self) -> i64 {
         // LCG参数适配u64
-        self.next = self.next
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1);
+        self.next = self.next.wrapping_mul(6364136223846793005).wrapping_add(1);
 
         ((self.next >> 33) & 0x7FFF_FFFF) as i64
     }
@@ -79,11 +77,20 @@ mod tests {
 
         // After reseeding with `initial_seed`, the sequence should restart from there.
         // So, val3_1 should be equal to val1_1, and val3_2 to val1_2.
-        assert_eq!(val1_1, val3_1, "First value after re-seeding with initial_seed should match.");
-        assert_eq!(val1_2, val3_2, "Second value after re-seeding with initial_seed should match.");
+        assert_eq!(
+            val1_1, val3_1,
+            "First value after re-seeding with initial_seed should match."
+        );
+        assert_eq!(
+            val1_2, val3_2,
+            "Second value after re-seeding with initial_seed should match."
+        );
 
         // The values after re-seeding with `reseed_value` should be different from initial_seed's sequence.
-        assert_ne!(val1_1, val2_1, "Values from different seeds should not match.");
+        assert_ne!(
+            val1_1, val2_1,
+            "Values from different seeds should not match."
+        );
     }
 
     #[test]
@@ -99,6 +106,9 @@ mod tests {
             seq_b.push(rng_b.rand());
         }
 
-        assert_ne!(seq_a, seq_b, "Sequences from different seeds should not be equal.");
+        assert_ne!(
+            seq_a, seq_b,
+            "Sequences from different seeds should not be equal."
+        );
     }
 }

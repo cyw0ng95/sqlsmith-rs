@@ -12,7 +12,10 @@ pub trait TriggerTableLike {
 /// # Arguments
 /// * `tables` - List of available tables to reference in the trigger
 /// * `rng` - Random number generator for value selection
-pub fn gen_create_trigger_stmt<T: TriggerTableLike>(tables: &[T], rng: &mut LcgRng) -> Option<String> {
+pub fn gen_create_trigger_stmt<T: TriggerTableLike>(
+    tables: &[T],
+    rng: &mut LcgRng,
+) -> Option<String> {
     if tables.is_empty() {
         return None;
     }
@@ -22,7 +25,11 @@ pub fn gen_create_trigger_stmt<T: TriggerTableLike>(tables: &[T], rng: &mut LcgR
     let table = &tables[table_idx];
 
     // Randomly choose trigger timing (BEFORE/AFTER)
-    let timing = if rng.rand().unsigned_abs() % 2 == 0 { "BEFORE" } else { "AFTER" };
+    let timing = if rng.rand().unsigned_abs() % 2 == 0 {
+        "BEFORE"
+    } else {
+        "AFTER"
+    };
 
     // Randomly choose trigger event (INSERT/UPDATE/DELETE)
     let event = match rng.rand().unsigned_abs() % 3 {
@@ -34,12 +41,15 @@ pub fn gen_create_trigger_stmt<T: TriggerTableLike>(tables: &[T], rng: &mut LcgR
     // Simple trigger body example: log operation
     let trigger_body = format!(
         "BEGIN\n    -- Example trigger action\n    INSERT INTO trigger_log (operation, table_name) VALUES ('{}', '{}');\nEND",
-        event, table.name()
+        event,
+        table.name()
     );
 
     Some(format!(
         "CREATE TRIGGER IF NOT EXISTS trig_{}_{}_{}\n{} {} ON {}\n{}",
-        table.name(), timing.to_lowercase(), event.to_lowercase(),
+        table.name(),
+        timing.to_lowercase(),
+        event.to_lowercase(),
         timing,
         event,
         table.name(),

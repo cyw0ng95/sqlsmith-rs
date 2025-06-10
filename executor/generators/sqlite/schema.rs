@@ -9,7 +9,7 @@ pub struct TableInfo {
 pub fn get(sqlite_conn: &Connection) -> Result<Vec<TableInfo>> {
     let mut tables = Vec::new();
     let mut stmt = sqlite_conn.prepare(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';",
     )?;
     let table_names = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
@@ -40,10 +40,7 @@ pub fn get_tables_with_columns(sqlite_conn: &Connection) -> Vec<(String, Vec<(St
             Err(_) => continue,
         };
         let columns_info = match stmt.query_map([], |row| {
-            Ok((
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-            ))
+            Ok((row.get::<_, String>(1)?, row.get::<_, String>(2)?))
         }) {
             Ok(rows) => {
                 let mut info = Vec::new();
