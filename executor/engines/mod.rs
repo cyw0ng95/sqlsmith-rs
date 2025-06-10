@@ -56,7 +56,7 @@ where
     F: FnMut(SqlKind, &mut sqlsmith_rs_common::rand_by_seed::LcgRng) -> Option<String>,
 {
     // Add CreateTrigger to the total
-    let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA + prob.CREATE_TRIGGER;
+    let total = prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA + prob.CREATE_TRIGGER + prob.DROP_TRIGGER;
     if total == 0 {
         return "SELECT 1;".to_string();
     }
@@ -73,8 +73,10 @@ where
         get_stmt(SqlKind::Vacuum, rng)
     } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA {
         get_stmt(SqlKind::Pragma, rng)
-    } else {
+    } else if r < prob.SELECT + prob.INSERT + prob.UPDATE + prob.DELETE + prob.VACUUM + prob.PRAGMA + prob.CREATE_TRIGGER {
         get_stmt(SqlKind::CreateTrigger, rng)
+    } else {
+        get_stmt(SqlKind::DropTrigger, rng)
     }
     .unwrap_or_else(|| "SELECT 1;".to_string())
 }

@@ -5,7 +5,8 @@ pub mod insert_stmt_common;
 pub mod delete_stmt_common;
 pub mod vacuum_stmt_common;
 pub mod pragma_stmt_common;
-pub mod create_trigger_stmt_common; // New module declaration
+pub mod create_trigger_stmt_common;
+pub mod drop_trigger_stmt_common; // New module declaration
 pub mod data_type;
 
 // 通用 SQL 语句类型定义，供 limbo 和 sqlite 共享
@@ -17,7 +18,8 @@ pub enum SqlKind {
     Delete,
     Vacuum,
     Pragma,
-    CreateTrigger
+    CreateTrigger,
+    DropTrigger
 }
 
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
@@ -64,6 +66,7 @@ pub fn gen_stmt(
         SqlKind::Update => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Update),
         SqlKind::Delete => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::Delete),
         SqlKind::CreateTrigger => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::CreateTrigger),
+        SqlKind::DropTrigger => call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::DropTrigger),
         SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => match driver_kind {
             DriverKind::Sqlite => {

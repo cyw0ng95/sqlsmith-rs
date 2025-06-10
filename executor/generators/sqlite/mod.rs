@@ -1,6 +1,7 @@
 use rusqlite::Connection;
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use crate::generators::common::{gen_stmt, DriverKind, SqlKind};
+use crate::generators::common::drop_trigger_stmt_common::gen_drop_trigger_stmt;
 pub mod schema;
 
 // 集成 select_stmt.rs
@@ -107,6 +108,14 @@ pub fn get_stmt_by_seed(sqlite_conn: &Connection, seeder: &mut LcgRng, kind: Sql
             }
             crate::generators::common::delete_stmt_common::gen_delete_stmt(&wrapped_tables, seeder)
         },
+        SqlKind::DropTrigger => {
+            let tables = match schema::get(sqlite_conn) {
+                Ok(t) if !t.is_empty() => t,
+                _ => return None,
+            };
+            let table_names = tables.iter().map(|t| t.name.as_str()).collect::<Vec<_>>();
+            gen_drop_trigger_stmt(&table_names, seeder)
+        }
         SqlKind::Vacuum => {
             crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt()
         },

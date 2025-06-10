@@ -36,6 +36,10 @@
       <el-form-item label="CREATE_TRIGGER Probability" prop="stmt_prob.CREATE_TRIGGER">
         <el-input-number v-model="profile.stmt_prob.CREATE_TRIGGER" :min="0"></el-input-number>
       </el-form-item>
+      <!-- 新增 DropTrigger 表单项 -->
+      <el-form-item label="DROP_TRIGGER Probability" prop="stmt_prob.DROP_TRIGGER">
+        <el-input-number v-model="profile.stmt_prob.DROP_TRIGGER" :min="0"></el-input-number>
+      </el-form-item>
       <el-form-item label="Show Success SQL" prop="debug.show_success_sql">
         <el-switch v-model="profile.debug.show_success_sql"></el-switch>
       </el-form-item>
@@ -70,7 +74,8 @@ const profile = ref({
     VACUUM: 20,
     PRAGMA: 10,
     // 新增 CreateTrigger 默认值
-    CREATE_TRIGGER: 10
+    CREATE_TRIGGER: 10,
+    DROP_TRIGGER: 10
   },
   debug: {
     show_success_sql: false,
