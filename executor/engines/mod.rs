@@ -1,7 +1,6 @@
 use crate::generators::common::SqlKind;
 use log::info;
 use rusqlite::Connection;
-use serde_json::error;
 use sqlsmith_rs_common::profile::Profile;
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use sqlsmith_rs_drivers::limbo_in_mem::LimboDriver;
@@ -12,12 +11,8 @@ pub trait Engine {
     fn run(&mut self);
     fn generate_sql(&mut self) -> String;
     fn get_driver_kind(&self) -> DRIVER_KIND;
-    fn get_sqlite_driver_box(
-        &mut self,
-    ) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>>;
-    fn get_limbo_driver_box(
-        &mut self,
-    ) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>>;
+    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>>;
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>>;
 }
 
 // For SQLite driver implementation
@@ -25,41 +20,9 @@ pub struct SqliteEngine<'a> {
     pub rng: LcgRng,
     pub sqlite_driver_box: Box<dyn DatabaseDriver<Connection = Connection> + 'a>,
     pub run_count: usize,
+    pub thread_per_exec: usize,
     pub stmt_prob: Option<sqlsmith_rs_common::profile::StmtProb>,
     pub debug: Option<sqlsmith_rs_common::profile::DebugOptions>,
-}
-
-fn run_engine_loop<F>(
-    run_count: usize,
-    debug: &Option<sqlsmith_rs_common::profile::DebugOptions>,
-    mut gen_and_exec: F,
-) where
-    F: FnMut() -> anyhow::Result<(String, usize)>,
-{
-    let mut i = 0;
-    while i < run_count {
-        match gen_and_exec() {
-            Ok((sql, affected)) => {
-                if let Some(debug) = debug {
-                    if debug.show_success_sql {
-                        log::info!(
-                            "SQL executed successfully: {} (affected: {})",
-                            sql,
-                            affected
-                        );
-                    }
-                }
-            }
-            Err(e) => {
-                if let Some(debug) = debug {
-                    if debug.show_failed_sql {
-                        log::info!("Error executing SQL: {} with ret: [{:?}]", "<unknown>", e);
-                    }
-                }
-            }
-        }
-        i += 1;
-    }
 }
 
 fn generate_sql_by_prob<F>(
@@ -92,7 +55,6 @@ where
     for (prob, kind) in thresholds {
         accum += prob;
         if r < accum {
-            // 由于 SqlKind 不能被解引用，直接传递 kind 即可
             return get_stmt(kind, rng).unwrap_or_else(|| "SELECT 1;".to_string());
         }
     }
@@ -102,50 +64,70 @@ where
 
 impl<'a> Engine for SqliteEngine<'a> {
     fn run(&mut self) {
-        let debug = &self.debug;
-        let prob = &self.stmt_prob;
-        let run_count = self.run_count;
-        let rng = &mut self.rng;
-        // 定义可忽略的错误代码列表
-        let ignorable_errors = vec![rusqlite::ErrorCode::ConstraintViolation];
+        use std::sync::{Arc, Mutex};
+        use std::thread;
 
-        let success_count = std::sync::atomic::AtomicUsize::new(0);
-        let failed_expected_count = std::sync::atomic::AtomicUsize::new(0);
-        let failed_new_count = std::sync::atomic::AtomicUsize::new(0);
-        let mut stmt_type_counts = std::collections::HashMap::new(); // Track statement type counts
+        let (debug, prob, run_count, thread_per_exec, base_seed) = (
+            self.debug.clone(),
+            self.stmt_prob.clone(),
+            self.run_count,
+            self.thread_per_exec,
+            self.rng.get_seed()
+        );
+
+        // Shared statistics
+        let (success_count, failed_expected_count, failed_new_count, stmt_type_counts) = (
+            Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            Arc::new(Mutex::new(std::collections::HashMap::new()))
+        );
 
         let start_time = std::time::Instant::now();
-        let mut last_print_time = start_time;
-        let mut stmt_count = 0;
+        let mut handles = vec![];
 
-        for _ in 0..run_count {
-            let conn = self.sqlite_driver_box.get_connection_mut();
-            let sql = if let Some(prob) = prob {
-                generate_sql_by_prob(prob, rng, |kind, rng| {
-                    *stmt_type_counts.entry(kind.clone()).or_insert(0) += 1; // Increment count for this statement type
-                    crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
-                })
-            } else {
-                "SELECT 1;".to_string()
-            };
-            let result = self.sqlite_driver_box.exec(&sql);
-            match result {
-                Ok(affected) => {
-                    if let Some(debug) = debug {
-                        if debug.show_success_sql {
-                            log::info!(
-                                "SQL executed successfully: {} (affected: {})",
-                                sql,
-                                affected
-                            );
+        for n in 0..thread_per_exec {
+            let thread_run_count = run_count;
+            let (thread_seed, debug, prob) = (
+                base_seed.wrapping_add(n as u64),
+                debug.clone(),
+                prob.clone()
+            );
+            let (success_count, failed_expected_count, failed_new_count, stmt_type_counts) = (
+                Arc::clone(&success_count),
+                Arc::clone(&failed_expected_count),
+                Arc::clone(&failed_new_count),
+                Arc::clone(&stmt_type_counts)
+            );
+
+            handles.push(thread::spawn(move || {
+                let mut driver = new_conn(DRIVER_KIND::SQLITE_IN_MEM).expect("Failed to create driver");
+                let mut rng = LcgRng::new(thread_seed);
+                let ignorable_errors = vec![rusqlite::ErrorCode::ConstraintViolation];
+                let mut local_stmt_type_counts = std::collections::HashMap::new();
+
+                for _ in 0..thread_run_count {
+                    let conn = driver.get_connection_mut();
+                    let sql = if let Some(prob) = &prob {
+                        generate_sql_by_prob(prob, &mut rng, |kind, rng| {
+                            *local_stmt_type_counts.entry(kind.clone()).or_insert(0) += 1;
+                            crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
+                        })
+                    } else {
+                        "SELECT 1;".to_string()
+                    };
+
+                    match driver.exec(&sql) {
+                        Ok(affected) => {
+                            if let Some(debug) = &debug {
+                                if debug.show_success_sql {
+                                    log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
+                                }
+                            }
+                            success_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         }
-                    }
-                    success_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                }
-                Err(e) => {
-                    if let Some(debug) = debug {
-                        let error_code =
-                            if let Some(rusqlite_error) = e.downcast_ref::<rusqlite::Error>() {
+                        Err(e) => {
+                            let error_code = if let Some(rusqlite_error) = e.downcast_ref::<rusqlite::Error>() {
                                 match rusqlite_error {
                                     rusqlite::Error::SqliteFailure(errcode, _) => errcode.code,
                                     _ => rusqlite::ErrorCode::Unknown,
@@ -154,63 +136,68 @@ impl<'a> Engine for SqliteEngine<'a> {
                                 rusqlite::ErrorCode::Unknown
                             };
 
-                        if !ignorable_errors.contains(&error_code) {
-                            failed_new_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                            if debug.show_failed_sql {
-                                log::info!(
-                                    "Error executing SQL: {} with ret: [{:?}]",
-                                    sql,
-                                    error_code
-                                );
+                            if !ignorable_errors.contains(&error_code) {
+                                failed_new_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                                if let Some(debug) = &debug {
+                                    if debug.show_failed_sql {
+                                        log::info!("Error executing SQL: {} with ret: [{:?}]", sql, error_code);
+                                    }
+                                }
+                            } else {
+                                failed_expected_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             }
-                        } else {
-                            failed_expected_count
-                                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         }
                     }
                 }
-            }
-            stmt_count += 1;
-            let elapsed = last_print_time.elapsed();
-            if elapsed.as_secs() >= 1 {
-                let speed = stmt_count as f64 / elapsed.as_secs_f64();
-                log::info!("exec speed: {:.2} stmts/sec", speed);
-                stmt_count = 0;
-                last_print_time = std::time::Instant::now();
-            }
+
+                // Merge local statement type counts
+                if let Ok(mut global_map) = stmt_type_counts.lock() {
+                    for (k, v) in local_stmt_type_counts {
+                        *global_map.entry(k).or_insert(0) += v;
+                    }
+                }
+            }));
         }
 
-        info!(
-            "finish exec, success/failed_exp/failed_new: {:?}/{:?}/{:?}",
-            success_count, failed_expected_count, failed_new_count
+        for handle in handles {
+            handle.join().expect("Thread panicked");
+        }
+
+        let elapsed = start_time.elapsed();
+        let (final_success, final_failed_exp, final_failed_new) = (
+            success_count.load(std::sync::atomic::Ordering::Relaxed),
+            failed_expected_count.load(std::sync::atomic::Ordering::Relaxed),
+            failed_new_count.load(std::sync::atomic::Ordering::Relaxed)
         );
-        info!("Statement type statistics: {:?}", stmt_type_counts); // New log for statement types
+
+        info!(
+            "finish exec in {:.2?}, success/failed_exp/failed_new: {}/{}/{}",
+            elapsed, final_success, final_failed_exp, final_failed_new
+        );
+        
+        if let Ok(stmt_type_counts) = stmt_type_counts.lock() {
+            info!("Statement type statistics: {:?}", *stmt_type_counts);
+        }
     }
 
     fn generate_sql(&mut self) -> String {
         let conn = self.sqlite_driver_box.get_connection_mut();
-        let rng = &mut self.rng;
         if let Some(prob) = &self.stmt_prob {
-            generate_sql_by_prob(prob, rng, |kind, rng| {
+            generate_sql_by_prob(prob, &mut self.rng, |kind, rng| {
                 crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
             })
         } else {
             "SELECT 1;".to_string()
         }
     }
-    fn get_driver_kind(&self) -> DRIVER_KIND {
-        DRIVER_KIND::SQLITE_IN_MEM
+
+    fn get_driver_kind(&self) -> DRIVER_KIND { DRIVER_KIND::SQLITE_IN_MEM }
+    
+    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>> {
+        Some(&mut *self.sqlite_driver_box)
     }
-    // 修改方法名
-    fn get_sqlite_driver_box(
-        &mut self,
-    ) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>> {
-        Some(&mut *self.sqlite_driver_box) // 返回可变引用
-    }
-    // New implementation for Limbo driver (always None)
-    fn get_limbo_driver_box(
-        &mut self,
-    ) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>> {
+    
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>> {
         None
     }
 }
@@ -219,40 +206,34 @@ pub struct LimboEngine {
     pub rng: LcgRng,
     pub limbo_driver_box: Box<LimboDriver>,
     pub run_count: usize,
+    pub thread_per_exec: usize,
     pub stmt_prob: Option<sqlsmith_rs_common::profile::StmtProb>,
     pub debug: Option<sqlsmith_rs_common::profile::DebugOptions>,
 }
 
 impl Engine for LimboEngine {
     fn run(&mut self) {
-        let debug = &self.debug;
-        let prob = &self.stmt_prob;
-        let run_count = self.run_count;
-        let rng = &mut self.rng;
-        for _ in 0..run_count {
+        // Simple single-threaded implementation for now
+        for _ in 0..self.run_count {
             let conn = self.limbo_driver_box.get_connection_mut();
-            let sql = if let Some(prob) = prob {
-                generate_sql_by_prob(prob, rng, |kind, rng| {
+            let sql = if let Some(prob) = &self.stmt_prob {
+                generate_sql_by_prob(prob, &mut self.rng, |kind, rng| {
                     crate::generators::limbo::get_stmt_by_seed(conn, rng, kind)
                 })
             } else {
                 "SELECT 1;".to_string()
             };
-            let result = self.limbo_driver_box.exec(&sql);
-            match result {
+
+            match self.limbo_driver_box.exec(&sql) {
                 Ok(affected) => {
-                    if let Some(debug) = debug {
+                    if let Some(debug) = &self.debug {
                         if debug.show_success_sql {
-                            log::info!(
-                                "SQL executed successfully: {} (affected: {})",
-                                sql,
-                                affected
-                            );
+                            log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
                         }
                     }
                 }
                 Err(e) => {
-                    if let Some(debug) = debug {
+                    if let Some(debug) = &self.debug {
                         if debug.show_failed_sql {
                             log::info!("Error executing SQL: {} with ret: [{:?}]", sql, e);
                         }
@@ -264,38 +245,29 @@ impl Engine for LimboEngine {
 
     fn generate_sql(&mut self) -> String {
         let conn = self.limbo_driver_box.get_connection_mut();
-        let rng = &mut self.rng;
         if let Some(prob) = &self.stmt_prob {
-            generate_sql_by_prob(prob, rng, |kind, rng| {
+            generate_sql_by_prob(prob, &mut self.rng, |kind, rng| {
                 crate::generators::limbo::get_stmt_by_seed(conn, rng, kind)
             })
         } else {
             "SELECT 1;".to_string()
         }
     }
-    fn get_driver_kind(&self) -> DRIVER_KIND {
-        DRIVER_KIND::LIMBO_IN_MEM
-    }
-    fn get_sqlite_driver_box(
-        &mut self,
-    ) -> Option<&mut dyn DatabaseDriver<Connection = Connection>> {
-        None
-    }
-    // New implementation for Limbo driver
-    fn get_limbo_driver_box(
-        &mut self,
-    ) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>> {
-        Some(&mut *self.limbo_driver_box) // Now matches LimboDriver's DatabaseDriver implementation
+
+    fn get_driver_kind(&self) -> DRIVER_KIND { DRIVER_KIND::LIMBO_IN_MEM }
+    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = Connection>> { None }
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>> {
+        Some(&mut *self.limbo_driver_box)
     }
 }
 
-// 修改 with_driver_kind 函数
 pub fn with_driver_kind(
     seed: u64,
     kind: DRIVER_KIND,
     run_count: usize,
     profile: &Profile,
 ) -> anyhow::Result<Box<dyn Engine>> {
+    let thread_per_exec = profile.thread_per_exec.unwrap_or(5);
     match kind {
         DRIVER_KIND::SQLITE_IN_MEM => {
             let driver = new_conn(DRIVER_KIND::SQLITE_IN_MEM)?;
@@ -303,6 +275,7 @@ pub fn with_driver_kind(
                 rng: LcgRng::new(seed),
                 sqlite_driver_box: driver,
                 run_count,
+                thread_per_exec,
                 stmt_prob: profile.stmt_prob.clone(),
                 debug: profile.debug.clone(),
             }))
@@ -314,6 +287,7 @@ pub fn with_driver_kind(
                 rng: LcgRng::new(seed),
                 limbo_driver_box: Box::new(driver),
                 run_count,
+                thread_per_exec,
                 stmt_prob: profile.stmt_prob.clone(),
                 debug: profile.debug.clone(),
             }))

@@ -34,7 +34,7 @@ pub fn fork_server_main(profile: &Profile) {
     for n in 0..executor_count {
         let path = executor_path.clone();
         let process_name = format!("exec_{}", n);
-        let seed = base_seed + n as u64;
+        let seed = base_seed << 8 + n as u64;
         let handle = thread::spawn(move || {
             let mut cmd = Command::new(&path);
             cmd.env("EXEC_PARAM_SEED", seed.to_string());

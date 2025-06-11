@@ -1,10 +1,11 @@
 pub struct LcgRng {
     next: u64,
+    base_seed: u64,
 }
 
 impl LcgRng {
     pub fn new(seed: u64) -> Self {
-        LcgRng { next: seed }
+        LcgRng { next: seed, base_seed: seed }
     }
 
     pub fn rand(&mut self) -> i64 {
@@ -16,6 +17,11 @@ impl LcgRng {
 
     pub fn srand(&mut self, seed: u64) {
         self.next = seed;
+        self.base_seed = seed; // Reset base seed to the new seed
+    }
+
+    pub fn get_seed(&self) -> u64 {
+        self.base_seed
     }
 }
 

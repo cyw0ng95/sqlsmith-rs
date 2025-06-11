@@ -14,6 +14,10 @@
       <el-form-item label="Executor Count" prop="executor_count">
         <el-input-number v-model="profile.executor_count" :min="1"></el-input-number>
       </el-form-item>
+      <!-- Add thread_per_exec input -->
+      <el-form-item label="Threads per Executor" prop="thread_per_exec">
+        <el-input-number v-model="profile.thread_per_exec" :min="1"></el-input-number>
+      </el-form-item>
       <el-form-item label="SELECT Probability" prop="stmt_prob.SELECT">
         <el-input-number v-model="profile.stmt_prob.SELECT" :min="0"></el-input-number>
       </el-form-item>
@@ -66,6 +70,7 @@ const profile = ref({
   driver: 'SQLITE_IN_MEM',
   count: 8,
   executor_count: 5,
+  thread_per_exec: 5, // <-- Added default
   stmt_prob: {
     SELECT: 100,
     INSERT: 50,
@@ -98,6 +103,10 @@ const rules = {
     { required: true, message: 'Please enter the executor count', trigger: 'blur' },
     { type: 'number', min: 1, message: 'Executor count must be at least 1', trigger: 'blur' }
   ],
+  thread_per_exec: [
+    { required: true, message: 'Please enter the threads per executor', trigger: 'blur' },
+    { type: 'number', min: 1, message: 'Threads per executor must be at least 1', trigger: 'blur' }
+  ],
   seed: [
     { required: true, message: 'Please enter a seed value', trigger: 'blur' },
     { type: 'number', min: 0, message: 'Seed must be a positive number', trigger: 'blur' }
@@ -107,6 +116,10 @@ const rules = {
 onMounted(async () => {
   try {
     const data = await fetchProfile();
+    // Ensure thread_per_exec is set if missing from backend
+    if (data.thread_per_exec === undefined) {
+      data.thread_per_exec = 5;
+    }
     profile.value = data;
   } catch (error) {
     console.error('Failed to fetch profile:', error);

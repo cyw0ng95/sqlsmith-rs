@@ -8,6 +8,7 @@ pub struct Profile {
     pub driver: Option<DRIVER_KIND>,
     pub count: Option<usize>,
     pub executor_count: Option<usize>,
+    pub thread_per_exec: Option<usize>, // <-- Added
     pub stmt_prob: Option<StmtProb>,
     pub debug: Option<DebugOptions>,
     pub seed: Option<u64>, // Added seed field
@@ -42,6 +43,7 @@ pub fn read_profile() -> Profile {
     let driver = Some(DRIVER_KIND::SQLITE_IN_MEM);
     let count = Some(8);
     let executor_count = Some(5);
+    let thread_per_exec = Some(5); // <-- Added default
     let stmt_prob = Some(StmtProb {
         SELECT: 100,
         INSERT: 50,
@@ -62,6 +64,7 @@ pub fn read_profile() -> Profile {
         driver,
         count,
         executor_count,
+        thread_per_exec, // <-- Added
         stmt_prob,
         debug,
         seed,
@@ -95,6 +98,10 @@ impl Profile {
             "executor_count={}",
             self.executor_count.unwrap_or(5)
         ));
+        items.push(format!(
+            "thread_per_exec={}",
+            self.thread_per_exec.unwrap_or(5)
+        )); // <-- Added print
         if let Some(seed) = self.seed {
             items.push(format!("seed={}", seed)); // Added seed to print
         }
