@@ -213,33 +213,113 @@ pub struct LimboEngine {
 
 impl Engine for LimboEngine {
     fn run(&mut self) {
-        // Simple single-threaded implementation for now
-        for _ in 0..self.run_count {
-            let conn = self.limbo_driver_box.get_connection_mut();
-            let sql = if let Some(prob) = &self.stmt_prob {
-                generate_sql_by_prob(prob, &mut self.rng, |kind, rng| {
-                    crate::generators::limbo::get_stmt_by_seed(conn, rng, kind)
-                })
-            } else {
-                "SELECT 1;".to_string()
-            };
+        use std::sync::{Arc, Mutex};
+        use std::thread;
 
-            match self.limbo_driver_box.exec(&sql) {
-                Ok(affected) => {
-                    if let Some(debug) = &self.debug {
-                        if debug.show_success_sql {
-                            log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
+        let (debug, prob, run_count, thread_per_exec, base_seed) = (
+            self.debug.clone(),
+            self.stmt_prob.clone(),
+            self.run_count,
+            self.thread_per_exec,
+            self.rng.get_seed()
+        );
+
+        // Shared statistics
+        let (success_count, failed_expected_count, failed_new_count, stmt_type_counts) = (
+            Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            Arc::new(std::sync::atomic::AtomicUsize::new(0)),
+            Arc::new(Mutex::new(std::collections::HashMap::new()))
+        );
+
+        let start_time = std::time::Instant::now();
+        let mut handles = vec![];
+
+        // Divide run_count among threads as evenly as possible
+        let base_per_thread = run_count / thread_per_exec;
+        let extra = run_count % thread_per_exec;
+
+        for n in 0..thread_per_exec {
+            let thread_run_count = if n < extra { base_per_thread + 1 } else { base_per_thread };
+            let (thread_seed, debug, prob) = (
+                base_seed.wrapping_add(n as u64),
+                debug.clone(),
+                prob.clone()
+            );
+            let (success_count, failed_expected_count, failed_new_count, stmt_type_counts) = (
+                Arc::clone(&success_count),
+                Arc::clone(&failed_expected_count),
+                Arc::clone(&failed_new_count),
+                Arc::clone(&stmt_type_counts)
+            );
+
+            handles.push(thread::spawn(move || {
+                let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
+                let mut driver = rt.block_on(async {
+                    LimboDriver::new().await.expect("Failed to create Limbo driver")
+                });
+                let mut rng = LcgRng::new(thread_seed);
+                let mut local_stmt_type_counts = std::collections::HashMap::new();
+
+                for _ in 0..thread_run_count {
+                    let conn = driver.get_connection_mut();
+                    let sql = if let Some(prob) = &prob {
+                        generate_sql_by_prob(prob, &mut rng, |kind, rng| {
+                            *local_stmt_type_counts.entry(kind.clone()).or_insert(0) += 1;
+                            crate::generators::limbo::get_stmt_by_seed(conn, rng, kind)
+                        })
+                    } else {
+                        "SELECT 1;".to_string()
+                    };
+
+                    match driver.exec(&sql) {
+                        Ok(affected) => {
+                            if let Some(debug) = &debug {
+                                if debug.show_success_sql {
+                                    log::info!("SQL executed successfully: {} (affected: {})", sql, affected);
+                                }
+                            }
+                            success_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                        }
+                        Err(e) => {
+                            // Since Limbo errors are different from SQLite, treat all as new errors for now
+                            failed_new_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                            if let Some(debug) = &debug {
+                                if debug.show_failed_sql {
+                                    log::info!("Error executing SQL: {} with ret: [{:?}]", sql, e);
+                                }
+                            }
                         }
                     }
                 }
-                Err(e) => {
-                    if let Some(debug) = &self.debug {
-                        if debug.show_failed_sql {
-                            log::info!("Error executing SQL: {} with ret: [{:?}]", sql, e);
-                        }
+
+                // Merge local statement type counts
+                if let Ok(mut global_map) = stmt_type_counts.lock() {
+                    for (k, v) in local_stmt_type_counts {
+                        *global_map.entry(k).or_insert(0) += v;
                     }
                 }
-            }
+            }));
+        }
+
+        for handle in handles {
+            handle.join().expect("Thread panicked");
+        }
+
+        let elapsed = start_time.elapsed();
+        let (final_success, final_failed_exp, final_failed_new) = (
+            success_count.load(std::sync::atomic::Ordering::Relaxed),
+            failed_expected_count.load(std::sync::atomic::Ordering::Relaxed),
+            failed_new_count.load(std::sync::atomic::Ordering::Relaxed)
+        );
+
+        info!(
+            "finish exec in {:.2?}, success/failed_exp/failed_new: {}/{}/{}",
+            elapsed, final_success, final_failed_exp, final_failed_new
+        );
+        
+        if let Ok(stmt_type_counts) = stmt_type_counts.lock() {
+            info!("Statement type statistics: {:?}", *stmt_type_counts);
         }
     }
 
