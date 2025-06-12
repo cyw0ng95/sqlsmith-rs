@@ -38,8 +38,12 @@
           <span class="value success">{{ stats.execution_results?.successful_queries || 0 }}</span>
         </div>
         <div class="stats-row">
-          <span class="label">Failed:</span>
-          <span class="value error">{{ stats.execution_results?.failed_queries || 0 }}</span>
+          <span class="label">Failed (Expected):</span>
+          <span class="value warning">{{ stats.execution_results?.failed_expected_queries || 0 }}</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Failed (New):</span>
+          <span class="value error">{{ stats.execution_results?.failed_new_queries || 0 }}</span>
         </div>
         <div class="stats-row">
           <span class="label">Error Rate:</span>
@@ -53,12 +57,16 @@
       <div class="stats-card">
         <h4>Performance</h4>
         <div class="stats-row">
-          <span class="label">Avg Exec Time:</span>
-          <span class="value">{{ stats.performance?.avg_execution_time_ms || 0 }}ms</span>
+          <span class="label">Max Exec Time:</span>
+          <span class="value">{{ stats.performance?.max_execution_time_ms || 0 }}ms</span>
         </div>
         <div class="stats-row">
           <span class="label">Queries/sec:</span>
-          <span class="value">{{ stats.performance?.queries_per_second || 0 }}</span>
+          <span class="value">{{ (stats.performance?.queries_per_second || 0).toFixed(2) }}</span>
+        </div>
+        <div class="stats-row">
+          <span class="label">Total Threads:</span>
+          <span class="value">{{ stats.performance?.total_thread_count || 0 }}</span>
         </div>
         <div class="stats-row">
           <span class="label">Uptime:</span>
@@ -82,10 +90,23 @@
           <span class="value small">{{ formatTimestamp(stats.timestamp) }}</span>
         </div>
       </div>
+
+      <!-- Statement Types (if available) -->
+      <div v-if="hasStatementTypes" class="stats-card">
+        <h4>Statement Types</h4>
+        <div v-for="(count, type) in stats.execution_results?.stmt_type_counts" :key="type" class="stats-row">
+          <span class="label">{{ type }}:</span>
+          <span class="value">{{ count }}</span>
+        </div>
+      </div>
     </div>
 
-    <div v-else class="loading">
+    <div v-else-if="stats === null" class="loading">
       <p>Loading statistics...</p>
+    </div>
+
+    <div v-else class="no-data">
+      <p>{{ stats.message || 'No executor statistics collected yet' }}</p>
     </div>
 
     <div class="controls">
@@ -109,6 +130,11 @@ let intervalId = null;
 const errorRate = computed(() => {
   if (!stats.value?.execution_results) return 0;
   return parseFloat(stats.value.execution_results.error_rate || 0).toFixed(1);
+});
+
+const hasStatementTypes = computed(() => {
+  const stmtCounts = stats.value?.execution_results?.stmt_type_counts;
+  return stmtCounts && Object.keys(stmtCounts).length > 0;
 });
 
 const fetchStats = async () => {
@@ -286,7 +312,7 @@ onUnmounted(() => {
   color: #ffc107;
 }
 
-.loading {
+.loading, .no-data {
   text-align: center;
   padding: 40px;
   color: #6c757d;
