@@ -177,6 +177,11 @@ struct AggregatedStats {
 async fn handle_stat_submission(stats: web::Json<ExecutionStats>) -> impl Responder {
     log::info!("Received executor statistics from: {}", stats.executor_id);
 
+    // Check if executor_id is a valid number
+    if stats.executor_id.parse::<u32>().is_err() {
+        return HttpResponse::BadRequest().body("executor_id must be a valid number");
+    }
+
     // Update aggregated statistics
     let mut aggregated = AGGREGATED_STATS.lock().unwrap();
     
