@@ -120,12 +120,7 @@ async fn collect_executor_results() -> impl Responder {
                 "max_execution_time_ms": agg.total_elapsed_ms,
                 "queries_per_second": overall_qps,
                 "total_thread_count": agg.total_thread_count,
-                "uptime_seconds": get_uptime_seconds(),
             },
-            "system": {
-                "memory_usage_mb": get_memory_usage_mb(),
-                "cpu_usage_percent": get_cpu_usage(),
-            }
         });
 
         HttpResponse::Ok()
@@ -152,11 +147,6 @@ async fn collect_executor_results() -> impl Responder {
                 "max_execution_time_ms": 0,
                 "queries_per_second": 0.0,
                 "total_thread_count": 0,
-                "uptime_seconds": get_uptime_seconds(),
-            },
-            "system": {
-                "memory_usage_mb": get_memory_usage_mb(),
-                "cpu_usage_percent": get_cpu_usage(),
             },
             "message": "No executor statistics collected yet"
         });
@@ -307,33 +297,5 @@ fn get_avg_execution_time() -> f64 {
 }
 
 fn get_queries_per_second() -> f64 {
-    0.0
-}
-
-fn get_uptime_seconds() -> u64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
-}
-
-fn get_memory_usage_mb() -> f64 {
-    use std::fs;
-    if let Ok(contents) = fs::read_to_string("/proc/self/status") {
-        for line in contents.lines() {
-            if line.starts_with("VmRSS:") {
-                if let Some(kb_str) = line.split_whitespace().nth(1) {
-                    if let Ok(kb) = kb_str.parse::<f64>() {
-                        return kb / 1024.0; // 转换为MB
-                    }
-                }
-            }
-        }
-    }
-    0.0
-}
-
-fn get_cpu_usage() -> f64 {
     0.0
 }
