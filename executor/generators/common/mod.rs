@@ -1,6 +1,7 @@
 // 仅用于公开 common 子模块
 pub mod create_trigger_stmt_common;
 pub mod data_type;
+pub mod datefunc_stmt_common; // Added module for date functions
 pub mod delete_stmt_common;
 pub mod drop_trigger_stmt_common; // New module declaration
 pub mod insert_stmt_common;
@@ -20,6 +21,7 @@ pub enum SqlKind {
     Pragma,
     CreateTrigger,
     DropTrigger,
+    DateFunc, // Added DateFunc SqlKind
 }
 
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
@@ -85,6 +87,6 @@ pub fn gen_stmt(
             }
             DriverKind::Limbo => None,
         },
-        _ => None,
+        SqlKind::DateFunc => crate::generators::common::datefunc_stmt_common::gen_datefunc_stmt(rng),
     }
 }

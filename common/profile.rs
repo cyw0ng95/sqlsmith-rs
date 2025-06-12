@@ -30,6 +30,7 @@ pub struct StmtProb {
     pub PRAGMA: u64,
     pub CREATE_TRIGGER: u64,
     pub DROP_TRIGGER: u64, // 新增 DropTrigger 字段
+    pub DATE_FUNC: u64, // 新增 DATE_FUNC 字段
 }
 
 pub fn read_profile() -> Profile {
@@ -53,6 +54,7 @@ pub fn read_profile() -> Profile {
         PRAGMA: 10,
         CREATE_TRIGGER: 10,
         DROP_TRIGGER: 10, // 新增 DropTrigger 默认值
+        DATE_FUNC: 20, // 新增 DATE_FUNC 默认值
     });
     let debug = Some(DebugOptions {
         show_success_sql: false,
@@ -114,6 +116,7 @@ impl Profile {
             items.push(format!("PRAGMA={}", stmt_prob.PRAGMA)); // 新增
             items.push(format!("CREATE_TRIGGER={}", stmt_prob.CREATE_TRIGGER));
             items.push(format!("DROP_TRIGGER={}", stmt_prob.DROP_TRIGGER)); // 新增 DropTrigger 打印
+            items.push(format!("DATE_FUNC={}", stmt_prob.DATE_FUNC)); // 新增 DATE_FUNC 打印
         }
         if let Some(debug) = &self.debug {
             items.push(format!("show_success_sql={}", debug.show_success_sql));
