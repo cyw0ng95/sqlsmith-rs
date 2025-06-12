@@ -11,6 +11,7 @@ enum PragmaKind {
 pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<String> {
     use PragmaKind::*;
     const PRAGMAS: &[PragmaKind] = &[
+        // No-argument pragmas
         NoArg("integrity_check"),
         NoArg("quick_check"),
         NoArg("foreign_key_check"),
@@ -24,6 +25,29 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
         NoArg("schema_version"),
         NoArg("user_version"),
         NoArg("encoding"),
+        NoArg("application_id"),
+        NoArg("auto_vacuum"),
+        NoArg("cache_size"),
+        NoArg("page_size"),
+        NoArg("wal_checkpoint"),
+        NoArg("journal_mode"),
+        NoArg("locking_mode"),
+        NoArg("synchronous"),
+        NoArg("temp_store"),
+        NoArg("secure_delete"),
+        NoArg("data_version"),
+        NoArg("freelist_count"),
+        NoArg("max_page_count"),
+        NoArg("read_uncommitted"),
+        NoArg("recursive_triggers"),
+        NoArg("reverse_unordered_selects"),
+        NoArg("shrink_memory"),
+        NoArg("soft_heap_limit"),
+        NoArg("threads"),
+        NoArg("trusted_schema"),
+        NoArg("writable_schema"),
+
+        // Boolean pragmas
         BoolArg("foreign_keys"),
         BoolArg("case_sensitive_like"),
         BoolArg("automatic_index"),
@@ -32,10 +56,21 @@ pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<S
         BoolArg("journal_size_limit"),
         BoolArg("legacy_file_format"),
         BoolArg("writable_schema"),
-        IntArg("cache_size", 100, 10000),
+        BoolArg("secure_delete"),
+        BoolArg("read_uncommitted"),
+        BoolArg("reverse_unordered_selects"),
+        BoolArg("trusted_schema"),
+
+        // Integer pragmas
+        IntArg("cache_size", -10000, 10000),
         IntArg("page_size", 512, 65536),
         IntArg("mmap_size", 0, 104857600),
         IntArg("wal_autocheckpoint", 1, 10000),
+        IntArg("max_page_count", 1, 1000000),
+        IntArg("soft_heap_limit", 0, 104857600),
+        IntArg("threads", 0, 8),
+
+        // String pragmas
         StringArg("journal_mode"),
         StringArg("locking_mode"),
         StringArg("synchronous"),

@@ -63,6 +63,9 @@
         <div v-for="(count, type) in stats.execution_results?.stmt_type_counts" :key="type" class="stats-row">
           <span class="label">{{ type }}:</span>
           <span class="value">{{ count }}</span>
+          <span class="percentage">
+            {{ ((count / totalStatements) * 100).toFixed(1) }}%
+          </span>
         </div>
       </div>
     </div>
@@ -93,16 +96,24 @@ const isConnected = ref(false);
 const autoRefresh = ref(true);
 let intervalId = null;
 
+// Compute error rate with fallback
 const errorRate = computed(() => {
-  if (!stats.value?.execution_results) return 0;
-  return parseFloat(stats.value.execution_results.error_rate || 0).toFixed(1);
+  const errorRateValue = stats.value?.execution_results?.error_rate || 0;
+  return parseFloat(errorRateValue).toFixed(1);
 });
 
+// Check if statement types are available
 const hasStatementTypes = computed(() => {
   const stmtCounts = stats.value?.execution_results?.stmt_type_counts;
   return stmtCounts && Object.keys(stmtCounts).length > 0;
 });
 
+// Total statements for percentage calculation
+const totalStatements = computed(() => {
+  return stats.value?.execution_results?.total_queries || 1;
+});
+
+// Fetch stats from the server
 const fetchStats = async () => {
   try {
     const data = await fetchStatsAPI();
@@ -114,6 +125,7 @@ const fetchStats = async () => {
   }
 };
 
+// Toggle auto-refresh functionality
 const toggleAutoRefresh = () => {
   autoRefresh.value = !autoRefresh.value;
   if (autoRefresh.value) {
@@ -123,11 +135,13 @@ const toggleAutoRefresh = () => {
   }
 };
 
+// Start auto-refresh interval
 const startAutoRefresh = () => {
   if (intervalId) clearInterval(intervalId);
   intervalId = setInterval(fetchStats, 1000); // Fetch every second
 };
 
+// Stop auto-refresh interval
 const stopAutoRefresh = () => {
   if (intervalId) {
     clearInterval(intervalId);
@@ -135,11 +149,13 @@ const stopAutoRefresh = () => {
   }
 };
 
+// Format timestamp for display
 const formatTimestamp = (timestamp) => {
-  if (!timestamp) return '';
+  if (!timestamp) return 'N/A';
   return new Date(timestamp).toLocaleTimeString();
 };
 
+// Lifecycle hooks
 onMounted(() => {
   fetchStats(); // Initial fetch
   if (autoRefresh.value) {
