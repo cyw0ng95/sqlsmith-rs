@@ -9,23 +9,6 @@
     </div>
     
     <div v-if="stats" class="stats-grid">
-      <!-- Executor Stats -->
-      <div class="stats-card">
-        <h4>Executors</h4>
-        <div class="stats-row">
-          <span class="label">Total:</span>
-          <span class="value">{{ stats.executor_stats?.total_executors || 0 }}</span>
-        </div>
-        <div class="stats-row">
-          <span class="label">Active:</span>
-          <span class="value active">{{ stats.executor_stats?.active_executors || 0 }}</span>
-        </div>
-        <div class="stats-row">
-          <span class="label">Completed:</span>
-          <span class="value">{{ stats.executor_stats?.completed_executors || 0 }}</span>
-        </div>
-      </div>
-
       <!-- Execution Results -->
       <div class="stats-card">
         <h4>Query Results</h4>
