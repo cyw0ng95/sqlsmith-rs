@@ -2025,6 +2025,7 @@ dependencies = [
  "chrono",
  "libc",
  "log",
+ "serde",
  "serde_json",
  "sqlsmith-rs-common",
  "tokio",

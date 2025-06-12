@@ -8,7 +8,27 @@ use actix_web::web;
 use sqlsmith_rs_common::profile::Profile;
 use sqlsmith_rs_common::profile::read_profile;
 use sqlsmith_rs_common::profile::write_profile; // Import CORS middleware
+use std::collections::HashMap;
+use std::sync::Mutex;
+use serde::{Serialize, Deserialize};
+
 mod fork_server;
+
+// Define ExecutionStats locally since sqlsmith_rs_executor is not available
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ExecutionStats {
+    pub elapsed_ms: u64,
+    pub success_count: usize,
+    pub failed_expected_count: usize,
+    pub failed_new_count: usize,
+    pub total_queries: usize,
+    pub thread_count: usize,
+    pub queries_per_second: f64,
+    pub error_rate: f64,
+    pub stmt_type_counts: HashMap<String, usize>,
+    pub executor_id: String,
+    pub timestamp: String,
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -64,43 +84,186 @@ async fn show_profile() -> impl Responder {
 async fn collect_executor_results() -> impl Responder {
     use serde_json::json;
 
-    let stats = json!({
-        "timestamp": chrono::Utc::now().to_rfc3339(),
-        "executor_stats": {
-            "total_executors": get_total_executor_count(),
-            "active_executors": get_active_executor_count(),
-            "completed_executors": get_completed_executor_count(),
-        },
-        "execution_results": {
-            "total_queries": get_total_query_count(),
-            "successful_queries": get_successful_query_count(),
-            "failed_queries": get_failed_query_count(),
-            "error_rate": calculate_error_rate(),
-        },
-        "performance": {
-            "avg_execution_time_ms": get_avg_execution_time(),
-            "queries_per_second": get_queries_per_second(),
-            "uptime_seconds": get_uptime_seconds(),
-        },
-        "system": {
-            "memory_usage_mb": get_memory_usage_mb(),
-            "cpu_usage_percent": get_cpu_usage(),
-        }
-    });
+    // Get aggregated statistics from handle_stat_submission
+    let aggregated = AGGREGATED_STATS.lock().unwrap();
+    
+    if let Some(agg) = aggregated.as_ref() {
+        // Calculate metrics from aggregated data
+        let overall_qps = if agg.total_elapsed_ms > 0 {
+            (agg.total_queries as f64) / (agg.total_elapsed_ms as f64 / 1000.0)
+        } else {
+            0.0
+        };
+        
+        let overall_error_rate = if agg.total_queries > 0 {
+            (agg.total_failed_new_count as f64 / agg.total_queries as f64) * 100.0
+        } else {
+            0.0
+        };
 
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .json(stats)
+        let stats = json!({
+            "timestamp": agg.last_updated,
+            "executor_stats": {
+                "total_executors": agg.total_executors,
+                "active_executors": 0, // Could be enhanced with process monitoring
+                "completed_executors": agg.total_executors,
+            },
+            "execution_results": {
+                "total_queries": agg.total_queries,
+                "successful_queries": agg.total_success_count,
+                "failed_expected_queries": agg.total_failed_expected_count,
+                "failed_new_queries": agg.total_failed_new_count,
+                "error_rate": overall_error_rate,
+                "stmt_type_counts": agg.combined_stmt_type_counts,
+            },
+            "performance": {
+                "max_execution_time_ms": agg.total_elapsed_ms,
+                "queries_per_second": overall_qps,
+                "total_thread_count": agg.total_thread_count,
+                "uptime_seconds": get_uptime_seconds(),
+            },
+            "system": {
+                "memory_usage_mb": get_memory_usage_mb(),
+                "cpu_usage_percent": get_cpu_usage(),
+            }
+        });
+
+        HttpResponse::Ok()
+            .content_type("application/json")
+            .json(stats)
+    } else {
+        // No data collected yet
+        let empty_stats = json!({
+            "timestamp": chrono::Utc::now().to_rfc3339(),
+            "executor_stats": {
+                "total_executors": 0,
+                "active_executors": 0,
+                "completed_executors": 0,
+            },
+            "execution_results": {
+                "total_queries": 0,
+                "successful_queries": 0,
+                "failed_expected_queries": 0,
+                "failed_new_queries": 0,
+                "error_rate": 0.0,
+                "stmt_type_counts": {},
+            },
+            "performance": {
+                "max_execution_time_ms": 0,
+                "queries_per_second": 0.0,
+                "total_thread_count": 0,
+                "uptime_seconds": get_uptime_seconds(),
+            },
+            "system": {
+                "memory_usage_mb": get_memory_usage_mb(),
+                "cpu_usage_percent": get_cpu_usage(),
+            },
+            "message": "No executor statistics collected yet"
+        });
+
+        HttpResponse::Ok()
+            .content_type("application/json")
+            .json(empty_stats)
+    }
+}
+
+// Global state to store aggregated statistics
+static AGGREGATED_STATS: Mutex<Option<AggregatedStats>> = Mutex::new(None);
+
+#[derive(Debug, Clone)]
+struct AggregatedStats {
+    total_executors: usize,
+    total_elapsed_ms: u64,
+    total_success_count: usize,
+    total_failed_expected_count: usize,
+    total_failed_new_count: usize,
+    total_queries: usize,
+    total_thread_count: usize,
+    combined_stmt_type_counts: HashMap<String, usize>,
+    last_updated: String,
 }
 
 // 新增处理函数，用于接收执行器统计提交
-async fn handle_stat_submission(stats: web::Json<serde_json::Value>) -> impl Responder {
-    log::info!("Received executor statistics: {:?}", stats);
+async fn handle_stat_submission(stats: web::Json<ExecutionStats>) -> impl Responder {
+    log::info!("Received executor statistics from: {}", stats.executor_id);
 
-    // 这里可以将统计数据保存到文件、数据库或内存中
-    // 目前简单记录日志
+    // Update aggregated statistics
+    let mut aggregated = AGGREGATED_STATS.lock().unwrap();
+    
+    match aggregated.as_mut() {
+        Some(agg) => {
+            // Update existing aggregated stats
+            agg.total_executors += 1;
+            agg.total_elapsed_ms = agg.total_elapsed_ms.max(stats.elapsed_ms); // Use max elapsed time
+            agg.total_success_count += stats.success_count;
+            agg.total_failed_expected_count += stats.failed_expected_count;
+            agg.total_failed_new_count += stats.failed_new_count;
+            agg.total_queries += stats.total_queries;
+            agg.total_thread_count += stats.thread_count;
+            
+            // Merge statement type counts
+            for (stmt_type, count) in &stats.stmt_type_counts {
+                *agg.combined_stmt_type_counts.entry(stmt_type.clone()).or_insert(0) += count;
+            }
+            
+            agg.last_updated = chrono::Utc::now().to_rfc3339();
+        }
+        None => {
+            // Initialize aggregated stats
+            *aggregated = Some(AggregatedStats {
+                total_executors: 1,
+                total_elapsed_ms: stats.elapsed_ms,
+                total_success_count: stats.success_count,
+                total_failed_expected_count: stats.failed_expected_count,
+                total_failed_new_count: stats.failed_new_count,
+                total_queries: stats.total_queries,
+                total_thread_count: stats.thread_count,
+                combined_stmt_type_counts: stats.stmt_type_counts.clone(),
+                last_updated: chrono::Utc::now().to_rfc3339(),
+            });
+        }
+    }
 
-    HttpResponse::Ok().body("Statistics received successfully")
+    let agg = aggregated.as_ref().unwrap();
+    
+    // Calculate aggregated metrics
+    let overall_qps = if agg.total_elapsed_ms > 0 {
+        (agg.total_queries as f64) / (agg.total_elapsed_ms as f64 / 1000.0)
+    } else {
+        0.0
+    };
+    
+    let overall_error_rate = if agg.total_queries > 0 {
+        (agg.total_failed_new_count as f64 / agg.total_queries as f64) * 100.0
+    } else {
+        0.0
+    };
+
+    let summary = format!(
+        "Statistics updated successfully!\n\nAggregated Results:\n\
+        Executors: {}\n\
+        Total Queries: {}\n\
+        Success: {}\n\
+        Failed (expected): {}\n\
+        Failed (new): {}\n\
+        Total Threads: {}\n\
+        Overall QPS: {:.2}\n\
+        Overall Error Rate: {:.2}%\n\
+        Max Execution Time: {}ms\n\
+        Last Updated: {}",
+        agg.total_executors,
+        agg.total_queries,
+        agg.total_success_count,
+        agg.total_failed_expected_count,
+        agg.total_failed_new_count,
+        agg.total_thread_count,
+        overall_qps,
+        overall_error_rate,
+        agg.total_elapsed_ms,
+        agg.last_updated
+    );
+
+    HttpResponse::Ok().body(summary)
 }
 
 // 辅助函数 - 这些需要根据实际实现来完善
