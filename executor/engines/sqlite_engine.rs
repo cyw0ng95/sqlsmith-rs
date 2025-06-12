@@ -98,7 +98,7 @@ impl<'a> super::Engine for SqliteEngine<'a> {
                     let conn = driver.get_connection_mut();
                     let sql = if let Some(prob) = &prob {
                         generate_sql_by_prob(prob, &mut rng, |kind, rng| {
-                            *local_stmt_type_counts.entry(kind.clone()).or_insert(0) += 1;
+                            *local_stmt_type_counts.entry(format!("{:?}", kind)).or_insert(0) += 1;
                             crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
                         })
                     } else {
@@ -163,8 +163,30 @@ impl<'a> super::Engine for SqliteEngine<'a> {
             elapsed, final_success, final_failed_exp, final_failed_new
         );
         
-        if let Ok(stmt_type_counts) = stmt_type_counts.lock() {
+        let stmt_counts = if let Ok(stmt_type_counts) = stmt_type_counts.lock() {
             info!("Statement type statistics: {:?}", *stmt_type_counts);
+            stmt_type_counts.clone()
+        } else {
+            std::collections::HashMap::new()
+        };
+
+        // Create and submit statistics
+        let executor_id = std::env::var("EXEC_PARAM_SEED")
+            .unwrap_or_else(|_| "unknown".to_string());
+        
+        let stats = super::ExecutionStats::new(
+            elapsed,
+            final_success,
+            final_failed_exp,
+            final_failed_new,
+            thread_per_exec,
+            stmt_counts,
+            executor_id,
+        );
+
+        // Submit stats using blocking version
+        if let Err(e) = super::submit_stats_blocking(stats) {
+            log::warn!("Failed to submit statistics: {}", e);
         }
     }
 

@@ -1,6 +1,9 @@
 use sqlsmith_rs_common::profile::Profile;
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 use sqlsmith_rs_drivers::{DRIVER_KIND, DatabaseDriver, new_conn};
+use serde::{Serialize, Deserialize};
+use std::collections::HashMap;
+use std::time::Duration;
 
 mod sqlite_engine;
 pub use sqlite_engine::SqliteEngine;
@@ -49,4 +52,86 @@ pub fn with_driver_kind(
             }))
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ExecutionStats {
+    pub elapsed_ms: u64,
+    pub success_count: usize,
+    pub failed_expected_count: usize,
+    pub failed_new_count: usize,
+    pub total_queries: usize,
+    pub thread_count: usize,
+    pub queries_per_second: f64,
+    pub error_rate: f64,
+    pub stmt_type_counts: HashMap<String, usize>,
+    pub executor_id: String,
+    pub timestamp: String,
+}
+
+impl ExecutionStats {
+    pub fn new(
+        elapsed: Duration,
+        success_count: usize,
+        failed_expected_count: usize,
+        failed_new_count: usize,
+        thread_count: usize,
+        stmt_type_counts: HashMap<String, usize>,
+        executor_id: String,
+    ) -> Self {
+        let total_queries = success_count + failed_expected_count + failed_new_count;
+        let elapsed_ms = elapsed.as_millis() as u64;
+        let queries_per_second = if elapsed_ms > 0 {
+            (total_queries as f64) / (elapsed_ms as f64 / 1000.0)
+        } else {
+            0.0
+        };
+        let error_rate = if total_queries > 0 {
+            (failed_new_count as f64 / total_queries as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        Self {
+            elapsed_ms,
+            success_count,
+            failed_expected_count,
+            failed_new_count,
+            total_queries,
+            thread_count,
+            queries_per_second,
+            error_rate,
+            stmt_type_counts,
+            executor_id,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+}
+
+pub fn submit_stats_blocking(stats: ExecutionStats) -> Result<(), Box<dyn std::error::Error>> {
+    use std::thread;
+    
+    // Spawn a thread to handle the HTTP request
+    thread::spawn(move || {
+        let client = reqwest::blocking::Client::new();
+        
+        match client
+            .post("http://127.0.0.1:8080/internal/stat/submit")
+            .json(&stats)
+            .send()
+        {
+            Ok(response) => {
+                if response.status().is_success() {
+                    log::info!("Statistics submitted successfully for executor: {}", stats.executor_id);
+                } else {
+                    log::warn!("Failed to submit statistics: HTTP {}", response.status());
+                }
+            }
+            Err(e) => {
+                log::warn!("Failed to submit statistics to server: {}", e);
+            }
+        }
+    });
+    
+    Ok(())
 }

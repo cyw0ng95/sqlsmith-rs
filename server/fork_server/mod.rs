@@ -1,8 +1,8 @@
 use sqlsmith_rs_common::profile::Profile;
 use std::env;
 use std::path::Path;
-use std::process::{Command, exit};
-use std::thread;
+use std::process::exit;
+use tokio::process::Command;
 
 fn get_executor_path() -> Option<String> {
     env::current_exe().ok().and_then(|mut path| {
@@ -13,11 +13,11 @@ fn get_executor_path() -> Option<String> {
 }
 
 fn can_execute(path: &str) -> bool {
-    Path::new(path).exists() && Command::new(path).arg("--version").output().is_ok()
+    Path::new(path).exists() && std::process::Command::new(path).arg("--version").output().is_ok()
 }
 
 /// fork_server 的主函数，用于生成多个进程
-pub fn fork_server_main(profile: &Profile) {
+pub async fn fork_server_main(profile: &Profile) {
     let executor_count = profile.executor_count.unwrap();
     let base_seed = profile.seed.unwrap_or(0);
     println!("Using executor count: {}", executor_count);
@@ -34,18 +34,33 @@ pub fn fork_server_main(profile: &Profile) {
     for n in 0..executor_count {
         let path = executor_path.clone();
         let process_name = format!("exec_{}", n);
-        let seed = base_seed << 8 + n as u64;
-        let handle = thread::spawn(move || {
+        let seed = (base_seed << 8) + n as u64;
+        let handle = tokio::spawn(async move {
             let mut cmd = Command::new(&path);
             cmd.env("EXEC_PARAM_SEED", seed.to_string());
+            
             #[cfg(unix)]
             {
                 use std::os::unix::process::CommandExt;
                 cmd.arg0(&process_name);
+                
+                // Set up prctl to kill child when parent dies
+                unsafe {
+                    cmd.pre_exec(|| {
+                        // PR_SET_PDEATHSIG = 1
+                        // SIGTERM = 15
+                        let ret = libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
+                        if ret != 0 {
+                            eprintln!("Failed to set PR_SET_PDEATHSIG");
+                        }
+                        Ok(())
+                    });
+                }
             }
+            
             match cmd.spawn() {
                 Ok(mut child) => {
-                    if let Err(e) = child.wait() {
+                    if let Err(e) = child.wait().await {
                         eprintln!("Executor failed: {}", e);
                     }
                 }
@@ -58,6 +73,6 @@ pub fn fork_server_main(profile: &Profile) {
         handles.push(handle);
     }
     for handle in handles {
-        let _ = handle.join();
+        let _ = handle.await;
     }
 }
