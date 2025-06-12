@@ -11,13 +11,16 @@ pub fn gen_update_stmt<T: TableColumnLike>(tables: &[T], rng: &mut LcgRng) -> Op
     if tables.is_empty() {
         return None;
     }
+
+    // Select a random table
     let table_idx = (rng.rand().unsigned_abs() as usize) % tables.len();
     let table = &tables[table_idx];
     let columns = table.columns();
     if columns.is_empty() {
         return None;
     }
-    // 随机选择要更新的列数量
+
+    // Randomly select columns to update
     let col_count = ((rng.rand().unsigned_abs() as usize) % columns.len()) + 1;
     let mut selected_cols = columns.clone();
     for i in (1..selected_cols.len()).rev() {
@@ -32,9 +35,45 @@ pub fn gen_update_stmt<T: TableColumnLike>(tables: &[T], rng: &mut LcgRng) -> Op
             format!("{} = {}", name, value)
         })
         .collect();
+
+    // Add optional WHERE clause
+    let where_clause = if rng.rand().unsigned_abs() % 2 == 0 {
+        let col_idx = (rng.rand().unsigned_abs() as usize) % columns.len();
+        let col = &columns[col_idx].0;
+        let value = generate_value_by_type(&columns[col_idx].1, rng);
+        format!("WHERE {} = {}", col, value)
+    } else {
+        String::new()
+    };
+
+    // Add optional LIMIT clause
+    let limit_clause = if rng.rand().unsigned_abs() % 2 == 0 {
+        let limit = (rng.rand().unsigned_abs() % 100).to_string(); // Random limit
+        format!("LIMIT {}", limit)
+    } else {
+        String::new()
+    };
+
+    // Add optional FROM clause (for multi-table updates)
+    let from_clause = if rng.rand().unsigned_abs() % 2 == 0 && tables.len() > 1 {
+        let other_table_idx = (rng.rand().unsigned_abs() as usize) % tables.len();
+        let other_table = &tables[other_table_idx];
+        if other_table.name() != table.name() {
+            format!("FROM {}", other_table.name())
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+
+    // Combine all parts into a full UPDATE statement
     Some(format!(
-        "UPDATE {} SET {} WHERE 1=1;",
+        "UPDATE {} {} SET {} {} {};",
         table.name(),
-        set_clause.join(", ")
+        from_clause,
+        set_clause.join(", "),
+        where_clause,
+        limit_clause
     ))
 }
