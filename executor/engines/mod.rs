@@ -109,29 +109,26 @@ impl ExecutionStats {
 }
 
 pub fn submit_stats_blocking(stats: ExecutionStats) -> Result<(), Box<dyn std::error::Error>> {
-    use std::thread;
+    let client = reqwest::blocking::Client::new();
     
-    // Spawn a thread to handle the HTTP request
-    thread::spawn(move || {
-        let client = reqwest::blocking::Client::new();
-        
-        match client
-            .post("http://127.0.0.1:8080/internal/stat/submit")
-            .json(&stats)
-            .send()
-        {
-            Ok(response) => {
-                if response.status().is_success() {
-                    log::info!("Statistics submitted successfully for executor: {}", stats.executor_id);
-                } else {
-                    log::warn!("Failed to submit statistics: HTTP {}", response.status());
-                }
-            }
-            Err(e) => {
-                log::warn!("Failed to submit statistics to server: {}", e);
+    match client
+        .post("http://127.0.0.1:8080/internal/stat/submit")
+        .json(&stats)
+        .send()
+    {
+        Ok(response) => {
+            if response.status().is_success() {
+                log::info!("Statistics submitted successfully for executor: {}", stats.executor_id);
+                Ok(())
+            } else {
+                let error_msg = format!("Failed to submit statistics: HTTP {}", response.status());
+                log::warn!("{}", error_msg);
+                Err(error_msg.into())
             }
         }
-    });
-    
-    Ok(())
+        Err(e) => {
+            log::warn!("Failed to submit statistics to server: {}", e);
+            Err(e.into())
+        }
+    }
 }
