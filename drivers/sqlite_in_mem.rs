@@ -81,8 +81,6 @@ impl SqliteDriver {
 }
 
 impl DatabaseDriver for SqliteDriver {
-    type Connection = Connection;
-
     fn exec(&self, sql: &str) -> Result<usize> {
         // 检查是否为查询语句，简单通过常见关键字判断
         let lower_sql = sql.to_lowercase();
@@ -109,11 +107,7 @@ impl DatabaseDriver for SqliteDriver {
         Ok(count)
     }
 
-    fn get_connection(&self) -> &Self::Connection {
+    fn get_connection(&self) -> &dyn std::any::Any {
         &self.conn
-    }
-
-    fn get_connection_mut(&mut self) -> &mut Self::Connection {
-        &mut self.conn
     }
 }

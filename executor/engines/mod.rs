@@ -11,13 +11,15 @@ pub use sqlite_engine::SqliteEngine;
 mod limbo_engine;
 pub use limbo_engine::LimboEngine;
 
+use crate::generators::common::SqlKind;
+
 // Define Engine trait
 pub trait Engine {
     fn run(&mut self);
     fn generate_sql(&mut self) -> String;
     fn get_driver_kind(&self) -> DRIVER_KIND;
-    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>>;
-    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>>;
+    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver>;
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver>;
 }
 
 pub fn with_driver_kind(
@@ -29,10 +31,11 @@ pub fn with_driver_kind(
     let thread_per_exec = profile.thread_per_exec.unwrap_or(5);
     match kind {
         DRIVER_KIND::SQLITE_IN_MEM => {
-            let driver = new_conn(DRIVER_KIND::SQLITE_IN_MEM)?;
+            let rt = tokio::runtime::Runtime::new()?;
+            let driver = rt.block_on(new_conn(DRIVER_KIND::SQLITE_IN_MEM))?;
             Ok(Box::new(SqliteEngine {
                 rng: LcgRng::new(seed),
-                sqlite_driver_box: driver,
+                sqlite_driver_box: Box::new(driver),
                 run_count,
                 thread_per_exec,
                 stmt_prob: profile.stmt_prob.clone(),
@@ -107,6 +110,45 @@ impl ExecutionStats {
         }
     }
 }
+
+pub fn generate_sql_by_prob<F>(
+    prob: &sqlsmith_rs_common::profile::StmtProb,
+    rng: &mut LcgRng,
+    mut get_stmt: F,
+) -> String
+where
+    F: FnMut(SqlKind, &mut LcgRng) -> Option<String>,
+{
+    let thresholds = [
+        (prob.SELECT, SqlKind::Select),
+        (prob.INSERT, SqlKind::Insert),
+        (prob.UPDATE, SqlKind::Update),
+        (prob.DELETE, SqlKind::Delete),
+        (prob.VACUUM, SqlKind::Vacuum),
+        (prob.PRAGMA, SqlKind::Pragma),
+        (prob.CREATE_TRIGGER, SqlKind::CreateTrigger),
+        (prob.DROP_TRIGGER, SqlKind::DropTrigger),
+        (prob.DATE_FUNC, SqlKind::DateFunc), // Added support for DATE_FUNC
+    ];
+
+    let total: u64 = thresholds.iter().map(|(p, _)| p).sum();
+    if total == 0 {
+        return "SELECT 1;".to_string();
+    }
+
+    let r = (rng.rand().abs() as u64) % total;
+    let mut accum = 0;
+
+    for (prob, kind) in thresholds {
+        accum += prob;
+        if r < accum {
+            return get_stmt(kind, rng).unwrap_or_else(|| "SELECT 1;".to_string());
+        }
+    }
+
+    "SELECT 1;".to_string()
+}
+
 
 pub fn submit_stats_blocking(stats: ExecutionStats) -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::blocking::Client::new();

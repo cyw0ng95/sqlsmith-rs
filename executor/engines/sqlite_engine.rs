@@ -1,4 +1,4 @@
-use crate::generators::common::SqlKind;
+use crate::{engines::generate_sql_by_prob, generators::common::SqlKind};
 use log::info;
 use rusqlite::Connection;
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
@@ -6,49 +6,11 @@ use sqlsmith_rs_drivers::{DRIVER_KIND, DatabaseDriver, new_conn};
 
 pub struct SqliteEngine<'a> {
     pub rng: LcgRng,
-    pub sqlite_driver_box: Box<dyn DatabaseDriver<Connection = Connection> + 'a>,
+    pub sqlite_driver_box: Box<dyn DatabaseDriver + 'a>,
     pub run_count: usize,
     pub thread_per_exec: usize,
     pub stmt_prob: Option<sqlsmith_rs_common::profile::StmtProb>,
     pub debug: Option<sqlsmith_rs_common::profile::DebugOptions>,
-}
-
-fn generate_sql_by_prob<F>(
-    prob: &sqlsmith_rs_common::profile::StmtProb,
-    rng: &mut LcgRng,
-    mut get_stmt: F,
-) -> String
-where
-    F: FnMut(SqlKind, &mut LcgRng) -> Option<String>,
-{
-    let thresholds = [
-        (prob.SELECT, SqlKind::Select),
-        (prob.INSERT, SqlKind::Insert),
-        (prob.UPDATE, SqlKind::Update),
-        (prob.DELETE, SqlKind::Delete),
-        (prob.VACUUM, SqlKind::Vacuum),
-        (prob.PRAGMA, SqlKind::Pragma),
-        (prob.CREATE_TRIGGER, SqlKind::CreateTrigger),
-        (prob.DROP_TRIGGER, SqlKind::DropTrigger),
-        (prob.DATE_FUNC, SqlKind::DateFunc), // Added support for DATE_FUNC
-    ];
-
-    let total: u64 = thresholds.iter().map(|(p, _)| p).sum();
-    if total == 0 {
-        return "SELECT 1;".to_string();
-    }
-
-    let r = (rng.rand().abs() as u64) % total;
-    let mut accum = 0;
-
-    for (prob, kind) in thresholds {
-        accum += prob;
-        if r < accum {
-            return get_stmt(kind, rng).unwrap_or_else(|| "SELECT 1;".to_string());
-        }
-    }
-
-    "SELECT 1;".to_string()
 }
 
 impl<'a> super::Engine for SqliteEngine<'a> {
@@ -90,17 +52,26 @@ impl<'a> super::Engine for SqliteEngine<'a> {
             );
 
             handles.push(thread::spawn(move || {
-                let mut driver = new_conn(DRIVER_KIND::SQLITE_IN_MEM).expect("Failed to create driver");
+                let driver = futures::executor::block_on(new_conn(DRIVER_KIND::SQLITE_IN_MEM)).expect("Failed to create driver");
                 let mut rng = LcgRng::new(thread_seed);
                 let ignorable_errors = vec![rusqlite::ErrorCode::ConstraintViolation];
                 let mut local_stmt_type_counts = std::collections::HashMap::new();
 
                 for _ in 0..thread_run_count {
-                    let conn = driver.get_connection_mut();
                     let sql = if let Some(prob) = &prob {
                         generate_sql_by_prob(prob, &mut rng, |kind, rng| {
                             *local_stmt_type_counts.entry(format!("{:?}", kind)).or_insert(0) += 1;
-                            crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
+                            // Downcast to SqliteDriver to access connection
+                            if let sqlsmith_rs_drivers::AnyDatabaseDriver::Sqlite(ref sqlite_driver) = driver {
+                                let conn_any = sqlite_driver.get_connection();
+                                if let Some(conn) = conn_any.downcast_ref::<rusqlite::Connection>() {
+                                    crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
                         })
                     } else {
                         "SELECT 1;".to_string()
@@ -192,10 +163,14 @@ impl<'a> super::Engine for SqliteEngine<'a> {
     }
 
     fn generate_sql(&mut self) -> String {
-        let conn = self.sqlite_driver_box.get_connection_mut();
         if let Some(prob) = &self.stmt_prob {
             generate_sql_by_prob(prob, &mut self.rng, |kind, rng| {
-                crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
+                let conn_any = self.sqlite_driver_box.as_ref().get_connection();
+                if let Some(conn) = conn_any.downcast_ref::<rusqlite::Connection>() {
+                    crate::generators::sqlite::get_stmt_by_seed(conn, rng, kind)
+                } else {
+                    None
+                }
             })
         } else {
             "SELECT 1;".to_string()
@@ -204,11 +179,11 @@ impl<'a> super::Engine for SqliteEngine<'a> {
 
     fn get_driver_kind(&self) -> DRIVER_KIND { DRIVER_KIND::SQLITE_IN_MEM }
     
-    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = rusqlite::Connection>> {
+    fn get_sqlite_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver> {
         Some(&mut *self.sqlite_driver_box)
     }
     
-    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver<Connection = limbo::Connection>> {
+    fn get_limbo_driver_box(&mut self) -> Option<&mut dyn DatabaseDriver> {
         None
     }
 }
