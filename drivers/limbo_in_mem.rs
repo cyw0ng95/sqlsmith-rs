@@ -37,12 +37,13 @@ impl LimboDriver {
         info!("(Limbo) TPC-C tables created successfully.");
         Ok(())
     }
+
+    pub fn get_connection(&self) -> &Connection {
+        &self.conn
+    }
 }
 
 impl DatabaseDriver for LimboDriver {
-    // Use actual connection type instead of `()`
-    type Connection = limbo::Connection;
-
     fn exec(&self, sql: &str) -> Result<usize> {
         let rt = tokio::runtime::Runtime::new()?;
         rt.block_on(async {
@@ -63,11 +64,7 @@ impl DatabaseDriver for LimboDriver {
         })
     }
 
-    // Implement connection accessors with the correct type
-    fn get_connection(&self) -> &Self::Connection {
+    fn get_connection(&self) -> &dyn std::any::Any {
         &self.conn
-    }
-    fn get_connection_mut(&mut self) -> &mut Self::Connection {
-        &mut self.conn
     }
 }
