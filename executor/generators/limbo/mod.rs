@@ -57,7 +57,11 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
             // Limbo 目前对 Pragma 无处理，可保持 None 或后续添加实现
             None
         }
-        _ => gen_stmt(kind, DriverKind::Limbo, conn, seeder),
+        _ => {
+            // Handle other statement types directly or return None to avoid recursion
+            // TODO: Implement direct generation for other statement types as needed
+            None
+        }
     }
 }
 
