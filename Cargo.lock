@@ -2034,6 +2034,7 @@ dependencies = [
  "anyhow",
  "limbo",
  "log",
+ "once_cell",
  "rusqlite",
  "serde",
  "tokio",
