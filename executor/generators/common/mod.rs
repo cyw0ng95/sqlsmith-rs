@@ -80,7 +80,6 @@ pub fn gen_stmt(
             DriverKind::Sqlite => {
                 if let Some(sqlite_conn) = conn.downcast_ref::<rusqlite::Connection>() {
                     crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(
-                        sqlite_conn,
                         rng,
                     )
                 } else {

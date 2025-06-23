@@ -127,7 +127,6 @@ pub fn get_stmt_by_seed(
         }
         SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(
-            sqlite_conn,
             seeder,
         ),
         SqlKind::CreateTrigger => {

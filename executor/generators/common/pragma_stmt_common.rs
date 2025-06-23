@@ -8,7 +8,7 @@ enum PragmaKind {
     StringArg(&'static str),
 }
 
-pub fn get_pragma_stmt_by_seed(_conn: &Connection, rng: &mut LcgRng) -> Option<String> {
+pub fn get_pragma_stmt_by_seed(rng: &mut LcgRng) -> Option<String> {
     use PragmaKind::*;
     const PRAGMAS: &[PragmaKind] = &[
         // No-argument pragmas
