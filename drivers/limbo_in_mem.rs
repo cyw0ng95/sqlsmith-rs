@@ -30,10 +30,16 @@ impl LimboDriver {
         let sql_content = fs::read_to_string(sql_file_path)
             .map_err(|e| anyhow::anyhow!("Failed to read SQL file: {:?}: {}", sql_file_path, e))?;
 
-        self.conn
-            .execute(&sql_content, ())
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to execute Limbo init SQL batch: {}", e))?;
+        // Split and execute each statement
+        for stmt in sql_content.split(';') {
+            let stmt = stmt.trim();
+            if !stmt.is_empty() {
+                self.conn
+                    .execute(stmt, ())
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed to execute Limbo init SQL: {}\nError: {}", stmt, e))?;
+            }
+        }
         info!("(Limbo) TPC-C tables created successfully.");
         Ok(())
     }
