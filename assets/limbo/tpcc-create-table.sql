@@ -25,8 +25,7 @@ CREATE TABLE IF NOT EXISTS district (
     d_zip           TEXT    NOT NULL,
     d_tax           REAL    NOT NULL,
     d_ytd           REAL    NOT NULL,
-    d_next_o_id     INTEGER NOT NULL,
-    PRIMARY KEY (d_id, d_w_id)
+    d_next_o_id     INTEGER NOT NULL
 );
 
 -- 3. CUSTOMER Table
@@ -51,8 +50,7 @@ CREATE TABLE IF NOT EXISTS customer (
     c_ytd_payment   REAL    NOT NULL,
     c_payment_cnt   INTEGER NOT NULL,
     c_delivery_cnt  INTEGER NOT NULL,
-    c_data          TEXT    NOT NULL,
-    PRIMARY KEY (c_id, c_d_id, c_w_id)
+    c_data          TEXT    NOT NULL
 );
 
 -- 4. HISTORY Table
@@ -94,8 +92,7 @@ CREATE TABLE IF NOT EXISTS stock (
     s_ytd           INTEGER NOT NULL,
     s_order_cnt     INTEGER NOT NULL,
     s_remote_cnt    INTEGER NOT NULL,
-    s_data          TEXT    NOT NULL,
-    PRIMARY KEY (s_i_id, s_w_id)
+    s_data          TEXT    NOT NULL
 );
 
 -- 7. ORDER Table
@@ -107,16 +104,14 @@ CREATE TABLE IF NOT EXISTS customer_order (
     o_entry_d       TEXT    NOT NULL, -- Stored as ISO8601 string (YYYY-MM-DD HH:MM:SS.SSS)
     o_carrier_id    INTEGER,          -- Can be NULL
     o_ol_cnt        INTEGER NOT NULL,
-    o_all_local     INTEGER NOT NULL, -- 0 or 1 for boolean
-    PRIMARY KEY (o_id, o_d_id, o_w_id)
+    o_all_local     INTEGER NOT NULL -- 0 or 1 for boolean
 );
 
 -- 8. NEW_ORDER Table
 CREATE TABLE IF NOT EXISTS new_order (
     no_o_id     INTEGER NOT NULL,
     no_d_id     INTEGER NOT NULL,
-    no_w_id     INTEGER NOT NULL,
-    PRIMARY KEY (no_o_id, no_d_id, no_w_id)
+    no_w_id     INTEGER NOT NULL
 );
 
 -- 9. ORDER_LINE Table
@@ -130,6 +125,5 @@ CREATE TABLE IF NOT EXISTS order_line (
     ol_delivery_d   TEXT,             -- Can be NULL
     ol_quantity     INTEGER NOT NULL DEFAULT 0,
     ol_amount       REAL    NOT NULL,
-    ol_dist_info    TEXT    NOT NULL,
-    PRIMARY KEY (ol_o_id, ol_d_id, ol_w_id, ol_number)
+    ol_dist_info    TEXT    NOT NULL
 );

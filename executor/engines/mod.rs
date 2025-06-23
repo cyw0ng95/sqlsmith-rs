@@ -129,6 +129,7 @@ where
         (prob.CREATE_TRIGGER, SqlKind::CreateTrigger),
         (prob.DROP_TRIGGER, SqlKind::DropTrigger),
         (prob.DATE_FUNC, SqlKind::DateFunc), // Added support for DATE_FUNC
+        (prob.ALTER_TABLE, SqlKind::AlterTable), // Added support for ALTER_TABLE
     ];
 
     let total: u64 = thresholds.iter().map(|(p, _)| p).sum();
