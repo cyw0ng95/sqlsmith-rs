@@ -1,4 +1,5 @@
 use limbo::Connection;
+use log::info;
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
 pub mod schema;
 
@@ -29,6 +30,16 @@ impl TableColumnLike for schema::Table {
 }
 
 impl UpdateTableColumnLike for schema::Table {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn columns(&self) -> Vec<(String, String)> {
+        self.columns.clone()
+    }
+}
+
+// Implement AlterTableLike for schema::Table
+impl crate::generators::common::alter_table_stmt_common::AlterTableLike for schema::Table {
     fn name(&self) -> &str {
         &self.name
     }
@@ -70,6 +81,10 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
             // Limbo 目前对 DateFunc 无处理，可保持 None 或后续添加实现
             crate::generators::common::datefunc_stmt_common::gen_datefunc_stmt(seeder)
         },
+        SqlKind::AlterTable => {
+            // Use schema::Table directly if TableInfo does not exist
+            crate::generators::common::alter_table_stmt_common::gen_alter_table_stmt(&tables, seeder)
+        }
     }
 }
 

@@ -15,6 +15,16 @@ impl TableLike for schema::TableInfo {
     }
 }
 
+// Implement AlterTableLike for schema::TableInfo
+impl crate::generators::common::alter_table_stmt_common::AlterTableLike for schema::TableInfo {
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn columns(&self) -> Vec<(String, String)> {
+        self.columns.iter().map(|col| (col.clone(), String::new())).collect()
+    }
+}
+
 // 集成 insert_stmt.rs
 use crate::generators::common::insert_stmt_common::{TableColumnLike, gen_insert_stmt};
 // 修改结构体，直接拥有 name 的所有权
@@ -136,8 +146,17 @@ pub fn get_stmt_by_seed(
                 &wrapped_tables,
                 seeder,
             )
+        },
+        SqlKind::AlterTable => {
+            let tables = match schema::get(sqlite_conn) {
+                Ok(t) if !t.is_empty() => t,
+                _ => return None,
+            };
+            crate::generators::common::alter_table_stmt_common::gen_alter_table_stmt(&tables, seeder)
         }
-        _ => gen_stmt(kind, DriverKind::Sqlite, sqlite_conn, seeder),
+        SqlKind::DateFunc => {
+            crate::generators::common::datefunc_stmt_common::gen_datefunc_stmt(seeder)
+        }
     }
 }
 

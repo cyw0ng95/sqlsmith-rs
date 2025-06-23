@@ -48,6 +48,10 @@
       <el-form-item label="DATE_FUNC Probability" prop="stmt_prob.DATE_FUNC">
         <el-input-number v-model="profile.stmt_prob.DATE_FUNC" :min="0"></el-input-number>
       </el-form-item>
+      <!-- 新增 ALTER_TABLE 表单项 -->
+      <el-form-item label="ALTER_TABLE Probability" prop="stmt_prob.ALTER_TABLE">
+        <el-input-number v-model="profile.stmt_prob.ALTER_TABLE" :min="0"></el-input-number>
+      </el-form-item>
       <el-form-item label="Show Success SQL" prop="debug.show_success_sql">
         <el-switch v-model="profile.debug.show_success_sql"></el-switch>
       </el-form-item>
@@ -82,11 +86,10 @@ const profile = ref({
     DELETE: 20,
     VACUUM: 20,
     PRAGMA: 10,
-    // 新增 CreateTrigger 默认值
     CREATE_TRIGGER: 10,
     DROP_TRIGGER: 10,
-    // 新增 DATE_FUNC 默认值
-    DATE_FUNC: 10
+    DATE_FUNC: 10,
+    ALTER_TABLE: 10 // 新增 ALTER_TABLE 默认值
   },
   debug: {
     show_success_sql: false,
