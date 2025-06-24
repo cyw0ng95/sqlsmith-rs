@@ -1,10 +1,11 @@
-use std::fs::File;
 use std::fs::OpenOptions;
 use std::path::Path;
 use std::time::SystemTime;
 
-pub fn init() {
-    fern::Dispatch::new()
+use crate::profile::DebugOptions;
+
+pub fn init(debug: Option<&DebugOptions>) {
+    let mut dispatch = fern::Dispatch::new()
         .level(log::LevelFilter::Info)
         .chain(std::io::stdout())
         .format(|out, message, record| {
@@ -27,14 +28,19 @@ pub fn init() {
                     .unwrap_or(record.target()),
                 message
             ))
-        })
-        .chain(
+        });
+
+    if debug.map(|d| d.write_log_file).unwrap_or(false) {
+        dispatch = dispatch.chain(
             OpenOptions::new()
                 .create(true)
-                .append(true) // 启用追加模式
+                .append(true)
                 .open("sqlsmith-rs.log")
                 .expect("Failed to open log file"),
-        )
+        );
+    }
+
+    dispatch
         .apply()
         .expect("Failed to configure logging with fern");
     log::info!("Logging configured with fern.");

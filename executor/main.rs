@@ -12,9 +12,9 @@ use sqlsmith_rs_common::profile::read_profile;
 use crate::engines::with_driver_kind;
 
 fn main() -> Result<()> {
-    sqlsmith_rs_common::logger::init(); // Configure logging
-
     let profile = read_profile();
+    sqlsmith_rs_common::logger::init(profile.debug.as_ref()); // Configure logging
+
     let driver_kind = profile.driver.expect("driver kind must be specified");
     let run_count = profile.count.expect("run count must be an unsigned number");
     profile.print();

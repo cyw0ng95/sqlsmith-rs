@@ -66,8 +66,7 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
         }
         SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => {
-            // Limbo 目前对 Pragma 无处理，可保持 None 或后续添加实现
-            None
+            crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(seeder)
         },
         SqlKind::CreateTrigger => {
             // Limbo 目前对 CreateTrigger 无处理，可保持 None 或后续添加实现
@@ -84,7 +83,13 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
         SqlKind::AlterTable => {
             // Use schema::Table directly if TableInfo does not exist
             crate::generators::common::alter_table_stmt_common::gen_alter_table_stmt(&tables, seeder)
-        }
+        },
+        SqlKind::CreateTable => {
+            crate::generators::common::create_table_stmt_common::gen_create_table_stmt(seeder)
+        },
+        SqlKind::Transaction => {
+            crate::generators::common::transaction_stmt_common::gen_transaction_stmt(seeder)
+        },
     }
 }
 

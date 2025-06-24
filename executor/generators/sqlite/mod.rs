@@ -127,7 +127,6 @@ pub fn get_stmt_by_seed(
         }
         SqlKind::Vacuum => crate::generators::common::vacuum_stmt_common::gen_vacuum_stmt(),
         SqlKind::Pragma => crate::generators::common::pragma_stmt_common::get_pragma_stmt_by_seed(
-            sqlite_conn,
             seeder,
         ),
         SqlKind::CreateTrigger => {
@@ -156,6 +155,12 @@ pub fn get_stmt_by_seed(
         }
         SqlKind::DateFunc => {
             crate::generators::common::datefunc_stmt_common::gen_datefunc_stmt(seeder)
+        },
+        SqlKind::CreateTable => {
+            crate::generators::common::create_table_stmt_common::gen_create_table_stmt(seeder)
+        },
+        SqlKind::Transaction => {
+            crate::generators::common::transaction_stmt_common::gen_transaction_stmt(seeder)
         }
     }
 }

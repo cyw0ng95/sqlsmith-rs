@@ -52,6 +52,12 @@
       <el-form-item label="ALTER_TABLE Probability" prop="stmt_prob.ALTER_TABLE">
         <el-input-number v-model="profile.stmt_prob.ALTER_TABLE" :min="0"></el-input-number>
       </el-form-item>
+      <el-form-item label="CREATE_TABLE Probability" prop="stmt_prob.CREATE_TABLE">
+        <el-input-number v-model="profile.stmt_prob.CREATE_TABLE" :min="0"></el-input-number>
+      </el-form-item>
+      <el-form-item label="TRANSACTION Probability" prop="stmt_prob.TRANSACTION">
+        <el-input-number v-model="profile.stmt_prob.TRANSACTION" :min="0"></el-input-number>
+      </el-form-item>
       <el-form-item label="Show Success SQL" prop="debug.show_success_sql">
         <el-switch v-model="profile.debug.show_success_sql"></el-switch>
       </el-form-item>
@@ -89,7 +95,9 @@ const profile = ref({
     CREATE_TRIGGER: 10,
     DROP_TRIGGER: 10,
     DATE_FUNC: 10,
-    ALTER_TABLE: 10 // 新增 ALTER_TABLE 默认值
+    ALTER_TABLE: 10, // 新增 ALTER_TABLE 默认值
+    CREATE_TABLE: 10,
+    TRANSACTION: 10
   },
   debug: {
     show_success_sql: false,
