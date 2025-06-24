@@ -34,6 +34,7 @@ pub struct StmtProb {
     pub DATE_FUNC: u64,    // 新增 DATE_FUNC 字段
     pub ALTER_TABLE: u64,  // 新增 ALTER_TABLE 字段
     pub CREATE_TABLE: u64, // 保留 CREATE_TABLE 字段
+    pub TRANSACTION: u64, // 保留 TRANSACTION 字段
 }
 
 pub fn read_profile() -> Profile {
@@ -60,6 +61,7 @@ pub fn read_profile() -> Profile {
         DATE_FUNC: 20,    // 新增 DATE_FUNC 默认值
         ALTER_TABLE: 10,  // 新增 ALTER_TABLE 默认值
         CREATE_TABLE: 10, // 保留 CREATE_TABLE 默认值
+        TRANSACTION: 10,
     });
     let debug = Some(DebugOptions {
         show_success_sql: false,
@@ -125,6 +127,7 @@ impl Profile {
             items.push(format!("DATE_FUNC={}", stmt_prob.DATE_FUNC));
             items.push(format!("ALTER_TABLE={}", stmt_prob.ALTER_TABLE)); // 新增 ALTER_TABLE 打印
             items.push(format!("CREATE_TABLE={}", stmt_prob.CREATE_TABLE)); // 新增 CREATE_TABLE 打印
+            items.push(format!("TRANSACTION={}", stmt_prob.TRANSACTION));
         }
         if let Some(debug) = &self.debug {
             items.push(format!("show_success_sql={}", debug.show_success_sql));

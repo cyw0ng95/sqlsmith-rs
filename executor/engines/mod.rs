@@ -131,6 +131,7 @@ where
         (prob.DATE_FUNC, SqlKind::DateFunc), // Added support for DATE_FUNC
         (prob.ALTER_TABLE, SqlKind::AlterTable), // Added support for ALTER_TABLE
         (prob.CREATE_TABLE, SqlKind::CreateTable),
+        (prob.TRANSACTION, SqlKind::Transaction),
     ];
 
     let total: u64 = thresholds.iter().map(|(p, _)| p).sum();

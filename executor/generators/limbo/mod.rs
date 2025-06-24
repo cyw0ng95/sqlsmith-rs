@@ -87,6 +87,9 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
         SqlKind::CreateTable => {
             crate::generators::common::create_table_stmt_common::gen_create_table_stmt(seeder)
         },
+        SqlKind::Transaction => {
+            crate::generators::common::transaction_stmt_common::gen_transaction_stmt(seeder)
+        },
     }
 }
 
