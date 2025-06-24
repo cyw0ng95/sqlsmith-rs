@@ -32,8 +32,8 @@ pub struct ExecutionStats {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    sqlsmith_rs_common::logger::init(); // Configure logging
-    let _ = read_profile();
+    let profile = read_profile();
+    sqlsmith_rs_common::logger::init(profile.debug.as_ref()); // Configure logging
 
     HttpServer::new(|| {
         let cors = Cors::permissive();
