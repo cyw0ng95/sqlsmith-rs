@@ -74,7 +74,7 @@ impl<'a> super::Engine for SqliteEngine<'a> {
                             }
                         })
                     } else {
-                        "SELECT 1;".to_string()
+                        "SELECT 7;".to_string()
                     };
 
                     match driver.exec(&sql) {
@@ -173,7 +173,7 @@ impl<'a> super::Engine for SqliteEngine<'a> {
                 }
             })
         } else {
-            "SELECT 1;".to_string()
+            "SELECT 6;".to_string()
         }
     }
 

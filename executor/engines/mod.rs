@@ -130,11 +130,12 @@ where
         (prob.DROP_TRIGGER, SqlKind::DropTrigger),
         (prob.DATE_FUNC, SqlKind::DateFunc), // Added support for DATE_FUNC
         (prob.ALTER_TABLE, SqlKind::AlterTable), // Added support for ALTER_TABLE
+        (prob.CREATE_TABLE, SqlKind::CreateTable),
     ];
 
     let total: u64 = thresholds.iter().map(|(p, _)| p).sum();
     if total == 0 {
-        return "SELECT 1;".to_string();
+        return "SELECT 3;".to_string();
     }
 
     let r = (rng.rand().abs() as u64) % total;
@@ -143,11 +144,11 @@ where
     for (prob, kind) in thresholds {
         accum += prob;
         if r < accum {
-            return get_stmt(kind, rng).unwrap_or_else(|| "SELECT 1;".to_string());
+            return get_stmt(kind, rng).unwrap_or_else(|| "SELECT 5;".to_string());
         }
     }
 
-    "SELECT 1;".to_string()
+    "SELECT 4;".to_string()
 }
 
 

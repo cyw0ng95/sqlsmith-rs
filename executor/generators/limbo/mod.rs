@@ -83,7 +83,10 @@ pub fn get_stmt_by_seed(conn: &Connection, seeder: &mut LcgRng, kind: SqlKind) -
         SqlKind::AlterTable => {
             // Use schema::Table directly if TableInfo does not exist
             crate::generators::common::alter_table_stmt_common::gen_alter_table_stmt(&tables, seeder)
-        }
+        },
+        SqlKind::CreateTable => {
+            crate::generators::common::create_table_stmt_common::gen_create_table_stmt(seeder)
+        },
     }
 }
 

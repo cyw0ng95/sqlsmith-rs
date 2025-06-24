@@ -71,7 +71,7 @@ impl super::Engine for LimboEngine {
                             }
                         })
                     } else {
-                        "SELECT 1;".to_string()
+                        "SELECT 2;".to_string()
                     };
 
                     match driver.exec(&sql) {

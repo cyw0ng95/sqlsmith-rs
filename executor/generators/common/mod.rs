@@ -10,6 +10,7 @@ pub mod select_stmt_common;
 pub mod update_stmt_common;
 pub mod vacuum_stmt_common;
 pub mod alter_table_stmt_common;
+pub mod create_table_stmt_common;
 
 // 通用 SQL 语句类型定义，供 limbo 和 sqlite 共享
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -24,6 +25,7 @@ pub enum SqlKind {
     DropTrigger,
     DateFunc, // Added DateFunc SqlKind
     AlterTable,
+    CreateTable,
 }
 
 use sqlsmith_rs_common::rand_by_seed::LcgRng;
@@ -91,6 +93,9 @@ pub fn gen_stmt(
         SqlKind::DateFunc => crate::generators::common::datefunc_stmt_common::gen_datefunc_stmt(rng),
         SqlKind::AlterTable => {
             call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::AlterTable)
-        }
+        },
+        SqlKind::CreateTable => {
+            call_driver_get_stmt_by_seed(driver_kind, conn, rng, SqlKind::CreateTable)
+        },
     }
 }

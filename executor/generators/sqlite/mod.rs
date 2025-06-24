@@ -155,6 +155,9 @@ pub fn get_stmt_by_seed(
         }
         SqlKind::DateFunc => {
             crate::generators::common::datefunc_stmt_common::gen_datefunc_stmt(seeder)
+        },
+        SqlKind::CreateTable => {
+            crate::generators::common::create_table_stmt_common::gen_create_table_stmt(seeder)
         }
     }
 }
