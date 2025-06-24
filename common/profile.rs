@@ -18,6 +18,7 @@ pub struct Profile {
 pub struct DebugOptions {
     pub show_success_sql: bool,
     pub show_failed_sql: bool,
+    pub show_sql_before_exec: bool, // 新增 show_sql_before_exec
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)] // 添加 Clone
@@ -63,6 +64,7 @@ pub fn read_profile() -> Profile {
     let debug = Some(DebugOptions {
         show_success_sql: false,
         show_failed_sql: true,
+        show_sql_before_exec: false, // 新增默认值
     });
     let seed = Some(0);
 
@@ -127,6 +129,7 @@ impl Profile {
         if let Some(debug) = &self.debug {
             items.push(format!("show_success_sql={}", debug.show_success_sql));
             items.push(format!("show_failed_sql={}", debug.show_failed_sql));
+            items.push(format!("show_sql_before_exec={}", debug.show_sql_before_exec)); // 新增打印
         }
         log::info!("Profile: {}", items.join(", "));
     }

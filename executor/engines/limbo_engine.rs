@@ -74,6 +74,10 @@ impl super::Engine for LimboEngine {
                         "SELECT 2;".to_string()
                     };
 
+                    if debug.as_ref().map_or(false, |d| d.show_sql_before_exec) {
+                        log::info!("Generated SQL: {}", sql);
+                    }
+
                     match driver.exec(&sql) {
                         Ok(affected) => {
                             if let Some(debug) = &debug {
